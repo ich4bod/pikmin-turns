@@ -12,6 +12,6 @@ const { chromium } = require('playwright-core');
   await order(a,'Gather'); await order(b,'Scout'); await order(a,'Scout'); await order(b,'Gather'); await order(a,'Carry relic'); await order(b,'Recruit'); await order(a,'Skirmish');
   for (let turn=7;turn<16;turn++) await order(turn%2 ? b : a,'Gather');
   await a.getByText(/wins|tie/i).waitFor({timeout:6000});
-  await a.screenshot({path:'/tmp/pikmin-turns-live.png',fullPage:true});
+  await a.screenshot({path:'/w/pikmin-turns-live.png',fullPage:true});
   console.log(`browser verified lobby ${code}, illustrated map, all five orders, and a complete two-player match`); await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
