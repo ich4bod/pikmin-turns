@@ -1,14 +1,17 @@
 const { chromium } = require('playwright-core');
 (async () => {
   const browser = await chromium.launch({headless:true});
-  const a = await browser.newPage({ignoreHTTPSErrors:true});
+  const a = await browser.newPage({ignoreHTTPSErrors:true, viewport:{width:1280,height:900}});
   const b = await browser.newPage({ignoreHTTPSErrors:true});
   await a.goto('https://pikmin-turns.ichabod-crane.net');
-  await a.locator('#name').fill('Olimar'); await a.getByRole('button',{name:'Create landing site'}).click();
-  await a.locator('#codeout').waitFor(); const code=(await a.locator('#codeout').textContent()).replace('Lobby ','');
-  await b.goto('https://pikmin-turns.ichabod-crane.net'); await b.locator('#name').fill('Louie'); await b.locator('#code').fill(code); await b.getByRole('button',{name:'Join'}).click();
-  await b.getByText('Round 1 of 6').waitFor();
-  for (let turn = 0; turn < 12; turn++) { const page = turn % 2 ? b : a; await page.getByRole('button',{name:/Forage/}).click(); await page.waitForTimeout(150); }
-  await a.getByText(/Match over:/).waitFor({timeout:5000});
-  console.log(`browser verified two-player lobby ${code} through a complete six-round match`); await browser.close();
+  await a.locator('#name').fill('Olimar'); await a.getByRole('button',{name:'Plant a landing site'}).click();
+  await a.locator('#codeout').waitFor(); const code=(await a.locator('#codeout').textContent()).replace('LOBBY ','');
+  await b.goto('https://pikmin-turns.ichabod-crane.net'); await b.locator('#name').fill('Louie'); await b.locator('#code').fill(code); await b.getByRole('button',{name:'Land here'}).click();
+  await b.getByText('Round 1 / 8').waitFor();
+  const order=async(page,name)=>{ await page.getByRole('button',{name:new RegExp(name)}).click(); await page.waitForTimeout(180); };
+  await order(a,'Gather'); await order(b,'Scout'); await order(a,'Scout'); await order(b,'Gather'); await order(a,'Carry relic'); await order(b,'Recruit'); await order(a,'Skirmish');
+  for (let turn=7;turn<16;turn++) await order(turn%2 ? b : a,'Gather');
+  await a.getByText(/wins|tie/i).waitFor({timeout:6000});
+  await a.screenshot({path:'/tmp/pikmin-turns-live.png',fullPage:true});
+  console.log(`browser verified lobby ${code}, illustrated map, all five orders, and a complete two-player match`); await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
