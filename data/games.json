@@ -1,0 +1,42 @@
+{
+  "A3896C": {
+    "code": "A3896C",
+    "status": "finished",
+    "round": 7,
+    "turn": 0,
+    "players": [
+      {
+        "name": "Alph",
+        "token": "870c1688a1158960c2337631ae07cde7",
+        "sprouts": 3,
+        "nectar": 12,
+        "score": 6
+      },
+      {
+        "name": "Brittany",
+        "token": "8e25b8328763b075f15f0b05a86a8f39",
+        "sprouts": 3,
+        "nectar": 12,
+        "score": 6
+      }
+    ],
+    "log": [
+      "Alph opened a landing site.",
+      "Brittany landed. Alph takes the first turn.",
+      "Alph foraged nectar (+1 score).",
+      "Brittany foraged nectar (+1 score).",
+      "Alph foraged nectar (+1 score).",
+      "Brittany foraged nectar (+1 score).",
+      "Alph foraged nectar (+1 score).",
+      "Brittany foraged nectar (+1 score).",
+      "Alph foraged nectar (+1 score).",
+      "Brittany foraged nectar (+1 score).",
+      "Alph foraged nectar (+1 score).",
+      "Brittany foraged nectar (+1 score).",
+      "Alph foraged nectar (+1 score).",
+      "Brittany foraged nectar (+1 score).",
+      "Night falls: A tie beneath the onion.."
+    ],
+    "winner": "A tie beneath the onion."
+  }
+}
