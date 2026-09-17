@@ -10,7 +10,7 @@ const { chromium } = require('playwright-core');
   await b.getByText('Round 1 / 8').waitFor();
   const order=async(page,name)=>{ await page.getByRole('button',{name:new RegExp(name)}).click(); await page.waitForTimeout(180); };
   await order(a,'Gather'); await order(b,'Scout'); await order(a,'Scout'); await order(b,'Gather'); await order(a,'Carry relic'); await order(b,'Grow Pikmin'); await order(a,'Swarm bridge');
-  await a.getByText(/Pikmin in squad/).waitFor(); await a.getByText(/4 Pikmin/).waitFor();
+  await a.getByText(/Pikmin in squad/).first().waitFor(); await a.locator('#log').getByText(/assigned 4 Pikmin/).waitFor();
   for (let turn=7;turn<16;turn++) await order(turn%2 ? b : a,'Gather');
   await a.getByText(/wins|tie/i).waitFor({timeout:6000});
   await a.screenshot({path:'/w/pikmin-turns-live.png',fullPage:true});
