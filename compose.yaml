@@ -1,7 +1,11 @@
 name: pikmin-turns
 services:
   web:
-    build: .
+    build:
+      context: .
+      args:
+        OCI_REVISION: ${OCI_REVISION:?set the checked-out source revision before building}
+        OCI_CREATED: ${OCI_CREATED:?set the release timestamp before building}
     restart: unless-stopped
     expose: ["3000"]
     environment:
@@ -10,6 +14,8 @@ services:
       - game-data:/data
     networks: [proxy]
     labels:
+      - org.opencontainers.image.revision=${OCI_REVISION:?set the checked-out source revision before building}
+      - org.opencontainers.image.created=${OCI_CREATED:?set the release timestamp before building}
       - traefik.enable=true
       - "traefik.http.routers.pikmin-turns.rule=Host(`pikmin-turns.ichabod-crane.net`)"
       - traefik.http.routers.pikmin-turns.entrypoints=websecure
