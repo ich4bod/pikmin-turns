@@ -15,4 +15,4 @@ Open `http://localhost:3000`, create a landing site, and join its code from anot
 
 ## Operations
 
-The deployed service uses the `game-data` named volume. Back it up with `docker run --rm -v pikmin-turns_game-data:/data -v /home/ichabod/backups:/backup alpine tar czf /backup/pikmin-turns-data.tgz -C /data .`; restore with the inverse `tar xzf` command after stopping the service. Retention and a tested restore are not yet recorded.
+The deployed service uses the `game-data` named volume. A staged backup set lives under `/home/ichabod/backups/pikmin-turns-<UTC timestamp>/`: its `payload/pikmin-turns-data.tgz` is made with `docker run --rm -v pikmin-turns_game-data:/data:ro -v "$set_dir/payload":/backup alpine tar czf /backup/pikmin-turns-data.tgz -C /data .`; restore with the inverse `tar xzf` command after stopping the service. `manifest.json` checks the archive and `volume-manifest.json` checks the restored volume contents. Keep sets for 14 days; the inventory classifies older sets as stale but never deletes them. The last isolated restore rehearsal passed on 2026-09-19 UTC.
