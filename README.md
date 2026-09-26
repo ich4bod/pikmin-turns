@@ -26,3 +26,6 @@ The deployed service uses the `game-data` named volume. A staged backup set live
 ### Invitation links
 
 A hosted duel puts its lobby code in a shareable ?join= link. Opening the link fills the code but never joins or reveals a player token; the invited commander still supplies a name and chooses Land here.
+
+### Order guidance
+Every order shows Ready or its full resource requirement. The browser disables unaffordable orders for clarity; the server still validates every action.
