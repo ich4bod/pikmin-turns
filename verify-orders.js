@@ -29,9 +29,11 @@ const { chromium } = require('playwright');
     if (await getAvailability('carry') !== 'Needs 4 Pikmin · 3 nectar · 1 route') throw new Error(`Carry requirement wrong: ${await getAvailability('carry')}`);
     if (await getAvailability('recruit') !== 'Needs 2 nectar') throw new Error(`Grow requirement wrong: ${await getAvailability('recruit')}`);
 
-    // 2. Gather and assert Grow becomes ready while Carry stays blocked
+    // 2. Gather twice and assert Grow becomes ready while Carry stays blocked
     await page.click('button:has-text("Gather")');
     // Wait for update
+    await page.waitForTimeout(1000);
+    await page.click('button:has-text("Gather")');
     await page.waitForTimeout(1000);
 
     if (await getAvailability('recruit') !== 'Ready') throw new Error(`Grow not ready after gather: ${await getAvailability('recruit')}`);
