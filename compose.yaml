@@ -1,25 +1,21 @@
 name: pikmin-turns
+
 services:
   web:
-    build:
-      context: .
-      args:
-        OCI_REVISION: ${OCI_REVISION:?set the checked-out source revision before building}
-        OCI_CREATED: ${OCI_CREATED:?set the release timestamp before building}
+    build: .
     restart: unless-stopped
-    expose: ["3000"]
+    expose:
+      - "3000"
     environment:
       DATA_FILE: /data/games.json
     volumes:
       - game-data:/data
-    networks: [proxy]
+    networks:
+      - proxy
     labels:
-      - org.opencontainers.image.revision=${OCI_REVISION:?set the checked-out source revision before building}
-      - org.opencontainers.image.created=${OCI_CREATED:?set the release timestamp before building}
       - traefik.enable=true
       - "traefik.http.routers.pikmin-turns.rule=Host(`pikmin-turns.ichabod-crane.net`)"
-      - traefik.http.routers.pikmin-turns.entrypoints=websecure
-      - traefik.http.routers.pikmin-turns.tls.certresolver=letsencrypt
+      - traefik.http.routers.pikmin-turns.entrypoints=web
       - traefik.http.services.pikmin-turns.loadbalancer.server.port=3000
     cpus: "0.50"
     mem_limit: 512m
@@ -30,8 +26,14 @@ services:
       timeout: 5s
       retries: 3
     logging:
-      options: {max-size: 10m, max-file: "3"}
+      options:
+        max-size: 10m
+        max-file: "3"
+
 networks:
-  proxy: {external: true, name: ichabod-proxy}
+  proxy:
+    external: true
+    name: ichabod-proxy
+
 volumes:
   game-data:

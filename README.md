@@ -2,6 +2,8 @@
 
 A five-minute, turn-based browser RTS inspired by Pikmin. One commander creates a six-character lobby code; a second joins it. The server persists turn state in the `game-data` Docker volume, and browsers poll it so sessions can be asynchronous.
 
+Data: disposable; lobby codes and unfinished matches may vanish during a rebuild.
+
 ## Run
 
 ```sh
