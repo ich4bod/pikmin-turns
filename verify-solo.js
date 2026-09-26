@@ -24,7 +24,6 @@ const { chromium } = require('playwright-core');
     return await p.$eval('b', el => el.textContent.split(' ·')[0].trim());
   }));
   
-  console.log('Players found:', playerNames);
   if (!playerNames.includes('Sprout')) throw new Error(`Sprout not found among players: ${playerNames.join(', ')}`);
 
   // 3. Play until end
@@ -51,7 +50,6 @@ const { chromium } = require('playwright-core');
 
   // 4. Check winner/tie
   const status = await page.$eval('#status', el => el.textContent);
-  console.log('Final status:', status);
   if (!status.includes('wins') && !status.includes('A tie')) {
     throw new Error(`Expected winner or tie in status, got: ${status}`);
   }
