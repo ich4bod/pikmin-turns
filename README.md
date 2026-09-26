@@ -22,3 +22,7 @@ Play solo starts the same eight-round duel against Sprout. Sprout takes one dete
 ## Operations
 
 The deployed service uses the `game-data` named volume. A staged backup set lives under `/home/ichabod/backups/pikmin-turns-<UTC timestamp>/`: its `payload/pikmin-turns-data.tgz` is made with `docker run --rm -v pikmin-turns_game-data:/data:ro -v "$set_dir/payload":/backup alpine tar czf /backup/pikmin-turns-data.tgz -C /data .`; restore with the inverse `tar xzf` command after stopping the service. `manifest.json` checks the archive and `volume-manifest.json` checks the restored volume contents. Keep sets for 14 days; the inventory classifies older sets as stale but never deletes them. The last isolated restore rehearsal passed on 2026-09-19 UTC.
+
+### Invitation links
+
+A hosted duel puts its lobby code in a shareable ?join= link. Opening the link fills the code but never joins or reveals a player token; the invited commander still supplies a name and chooses Land here.
