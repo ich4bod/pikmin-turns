@@ -1,2 +1,3 @@
 data/games.json
 node_modules/
+.verify/
