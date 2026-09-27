@@ -4,6 +4,9 @@
 .availability[data-state="ready"] { background: rgba(255, 247, 223, 0.7); color: var(--ink); }
 .availability[data-state="blocked"] { background: #ffe2da; color: #8f2d2a; }
 .availability[data-state="waiting"], .availability[data-state="finished"] { background: #e8e1d2; color: #5d665f; }
+.haul-meter { font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle; }
+.haul-bar-bg { width: 30px; height: 6px; background: #fff; border: 1px solid var(--ink); position: relative; }
+.haul-bar-fill { position: absolute; height: 100%; background: var(--sun); left: 0; top: 0; }
 #error[role="alert"] { color: var(--rose); font-weight: bold; min-height: 1.2em; margin: 10px 0; }
 #order-help { font-size: 0.75rem; color: var(--ink); margin: 10px 0 0; opacity: 0.8; }
 .order:disabled { filter: saturate(0.35); }
