@@ -51,16 +51,38 @@ const { chromium } = require('playwright-core');
 
       let targetButton = null;
 
-      // Let's inspect the buttons
+      // Check for Carry
       for (const btn of orderButtons) {
         const text = await btn.$eval('b', el => el.textContent.toLowerCase());
-        console.log(`Found button: ${text}`);
         if (text.includes('carry')) {
           targetButton = btn;
           break;
         }
       }
 
+      // Check for Recruit if no carry
+      if (!targetButton) {
+        for (const btn of orderButtons) {
+          const text = await btn.$eval('b', el => el.textContent.toLowerCase());
+          if (text.includes('grow')) {
+            targetButton = btn;
+            break;
+          }
+        }
+      }
+
+      // Check for Gather if no carry or recruit
+      if (!targetButton) {
+        for (const btn of orderButtons) {
+          const text = await btn.$eval('b', el => el.textContent.toLowerCase());
+          if (text.includes('gather')) {
+            targetButton = btn;
+            break;
+          }
+        }
+      }
+
+      // If still no target, pick the first available
       if (!targetButton) {
         targetButton = orderButtons[0];
       }
