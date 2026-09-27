@@ -67,7 +67,7 @@ const { chromium } = require('playwright-core');
             }
 
             if (currentRound >= 8) {
-                console.log('Reached round 8, dusk clock verified for all required rounds.');
+                console.log('eight-round dusk clock verified through game end');
                 await browser.close();
                 return;
             }
