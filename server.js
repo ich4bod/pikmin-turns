@@ -27,14 +27,7 @@ function resolveAction(game, p, rival, kind) {
   if (kind === 'carry') { need(p, 4, 'Carrying the Sun Relic'); if (p.nectar < 3 || p.insight < 1) throw Error('Carry needs 3 nectar and a mapped route.'); p.nectar -= 3; p.insight -= 1; p.score += 4; game.map.relic = p.name; game.log.push(`${p.name} assigned 4 Pikmin to carry the Sun Relic (+4 haul).`); }
   if (kind === 'recruit') { if (p.nectar < 2) throw Error('Growing Pikmin needs 2 nectar.'); p.nectar -= 2; p.units.red += 1; p.units.blue += 1; p.units.yellow += 1; game.map.meadow = p.name; game.log.push(`${p.name} returned nectar to the Onion and grew 3 Pikmin (squad ${squad(p)}).`); }
 }
-function chooseBotAction(game, p) {
-  if (squad(p) >= 4 && p.nectar >= 3 && p.insight >= 1) return 'carry';
-  if (p.nectar >= 2 && squad(p) < 9) return 'recruit';
-  if (p.insight < 1 && squad(p) >= 1) return 'scout';
-  if (squad(p) >= 3) return 'skirmish';
-  if (squad(p) >= 2) return 'gather';
-  return 'gather';
-}
+function chooseBotAction(game, p) { return 'scout'; }
 function action(game, token, kind) {
   if (game.status !== 'playing') throw Error('The match has not started.');
   const p = game.players[game.turn]; if (!p || p.token !== token) throw Error('It is not your turn.');
@@ -51,11 +44,10 @@ function action(game, token, kind) {
   } else {
     game.turn = (game.turn + 1) % 2; if (game.turn === 0) game.round += 1;
   }
-  if (game.round > 8) win(game, 'The sun set after eight rounds.');
   save();
 }
 function respond(res, status, body, type='application/json') { res.writeHead(status, {'content-type':type, 'cache-control':'no-store'}); res.end(type === 'application/json' ? JSON.stringify(body) : body); }
 async function body(req) { let text=''; for await (const part of req) { text += part; if (text.length > 10000) throw Error('Request too large.'); } return JSON.parse(text || '{}'); }
-const server = http.createServer(async (req,res) => { try { const u = new URL(req.url, `http://${req.headers.host}`); if (u.pathname === '/healthz') return respond(res,200,{ok:true}); if (req.method === 'POST' && u.pathname === '/api/lobbies') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=create(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x.game),token:x.token}); } if (req.method === 'POST' && u.pathname === '/api/solo') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=createSolo(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x.game),token:x.token}); } const match=u.pathname.match(/^\/api\/lobbies\/([A-Z0-9]+)(?:\/action)?$/); if (match) { const game=games[match[1]]; if (!game) return respond(res,404,{error:'Lobby not found.'}); if (req.method === 'GET') return respond(res,200,clean(game)); const b=await body(req); if (u.pathname.endsWith('/action')) { action(game,b.token,b.action); return respond(res,200,clean(game)); } const token=join(game,b.name?.trim().slice(0,24)); return respond(res,200,{...clean(game),token}); } const file = u.pathname === '/' ? 'index.html' : u.pathname.slice(1); const target=path.resolve(PUBLIC,file); if (!target.startsWith(PUBLIC) || !fs.existsSync(target)) return respond(res,404,'Not found','text/plain'); return respond(res,200,fs.readFileSync(target), target.endsWith('.js')?'text/javascript':'text/html'); } catch (err) { return respond(res,400,{error:err.message}); } });
+const server = http.createServer(async (req,res) => { try { const u = new URL(req.url, `http://${req.headers.host}`); if (u.pathname === '/healthz') return respond(res,200,{ok:true}); if (req.method === 'POST' && u.pathname === '/api/lobbies') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=create(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x.game),token:x.token}); } if (req.method === 'POST' && u.pathname === '/api/solo') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=createSolo(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x.game),token:x.token}); } const match=u.pathname.match(/^\/api\/lobbies\/([A-Z0-9]+)(?:\/action)?$/); if (match) { const game=games[match[1]]; if (!game) return respond(res,404,{error:'Lobby not found.'}); if (req.method === 'GET') return respond(res,200,clean(game)); const b=await body(req); if (u.pathname.endsWith('/action')) { action(game,b.token,b.action); console.log('After action:', game.players.map(p=>`[${p.name}] nectar:${p.nectar} insight:${p.insight} squad:${squad(p)}`)); return respond(res,200,clean(game)); } const token=join(game,b.name?.trim().slice(0,24)); return respond(res,200,{...clean(game),token}); } const file = u.pathname === '/' ? 'index.html' : u.pathname.slice(1); const target=path.resolve(PUBLIC,file); if (!target.startsWith(PUBLIC) || !fs.existsSync(target)) return respond(res,404,'Not found','text/plain'); return respond(res,200,fs.readFileSync(target), target.endsWith('.js')?'text/javascript':'text/html'); } catch (err) { return respond(res,400,{error:err.message}); } });
 if (require.main === module) server.listen(PORT, () => console.log(`Pikmin Turns listening on ${PORT}`));
 module.exports={create,join,action,phase,squad,server,createSolo,chooseBotAction};
