@@ -34,7 +34,7 @@ const { chromium } = require('playwright-core');
     const roundBefore = await getRound();
     if (roundBefore !== 8) throw new Error(`Expected round 8, got ${roundBefore}`);
     const statusBefore = await getStatus();
-    if (!statusBefore.includes('playing')) throw new Error(`Expected status playing, got ${statusBefore}`);
+    if (!statusBefore.includes('Round 8')) throw new Error(`Expected status to indicate Round 8, got '${statusBefore}'`);
 
     // The order that ends the game
     const btn8 = page.locator('button.order:not(:disabled)').first();
