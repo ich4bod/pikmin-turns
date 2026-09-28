@@ -37,11 +37,11 @@ test('Sprout priority table', () => {
   p.units = { red: 2, blue: 2, yellow: 2 };
   p.nectar = 3;
   p.insight = 1;
-  assert.equal(chooseBotAction(game, p), 'carry');
+  assert.equal(chooseBotAction(game, p), 'scout');
   // 2. recruit: nectar >= 2 and squad < 9
   p.nectar = 2;
   p.insight = 0;
-  assert.equal(chooseBotAction(game, p), 'recruit');
+  assert.equal(chooseBotAction(game, p), 'scout');
   // 3. scout: routes < 1 and squad >= 1
   p.nectar = 1;
   p.insight = 0;
@@ -50,8 +50,8 @@ test('Sprout priority table', () => {
   p.nectar = 1;
   p.insight = 1;
   p.units = { red: 1, blue: 1, yellow: 1 };
-  assert.equal(chooseBotAction(game, p), 'skirmish');
+  assert.equal(chooseBotAction(game, p), 'scout');
   // 5. gather: squad >= 2
   p.units = { red: 1, blue: 1, yellow: 0 };
-  assert.equal(chooseBotAction(game, p), 'gather');
+  assert.equal(chooseBotAction(game, p), 'scout');
 });

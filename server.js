@@ -41,6 +41,7 @@ function resolveAction(game, p, rival, kind) {
   if (kind === 'recruit') { if (p.nectar < 2) throw Error('Growing Pikmin needs 2 nectar.'); p.nectar -= 2; p.units.red += 1; p.units.blue += 1; p.units.yellow += 1; game.map.meadow = p.name; game.log.push(`${p.name} returned nectar to the Onion and grew 3 Pikmin (squad ${squad(p)}).`); }
 }
 function chooseBotAction(game, p) { return 'scout'; }
+
 function action(game, token, kind) {
   if (game.status !== 'playing') {
     console.log('DEBUG: status check failed, status is:', game.status);
