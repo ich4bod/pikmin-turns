@@ -25,7 +25,7 @@ const { chromium } = require('playwright-core');
   const before = JSON.parse(await page.evaluate(() => sessionStorage.getItem('pikmin')));
   const posts = [];
   page.on('request', r => { if (r.method() === 'POST' && r.url().endsWith('/api/solo')) posts.push(r); });
-  await Promise.all([page.waitForResponse(r => r.url().endsWith('/api/solo') && r.status() === 201), page.click('#solo-again'), page.click('#solo-again')]);
+  await Promise.all([page.waitForResponse(r => r.url().endsWith('/api/solo') && r.status() === 201), page.evaluate(() => { const b = document.querySelector('#solo-again'); b.click(); b.click(); })]);
   await page.waitForTimeout(250);
   if (posts.length !== 1) throw new Error(`expected one solo POST, got ${posts.length}`);
   const state = JSON.parse(await page.evaluate(() => sessionStorage.getItem('pikmin')));
