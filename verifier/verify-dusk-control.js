@@ -6,7 +6,7 @@ const url=process.argv[2];
  await f.waitForFunction(()=>window.game?.status==='playing');
  const openingTally=await f.locator('#control-tally').textContent(); if(openingTally!=='Map control: all four places are open.'||await f.locator('#control-tally').evaluate(el=>getComputedStyle(el).display==='none')) throw Error('opening control tally mismatch');
  const act=async(p,a)=>{await p.locator(`button.order[onclick*="'${a}'"]`).click(); await p.waitForTimeout(300);};
- const fa=['scout','gather','scout','gather','scout','gather','scout','gather']; const ma=['gather','grow-red','gather','skirmish','gather','skirmish','gather','skirmish'];
+ const fa=['gather','scout','grow-blue','gather','scout','gather','scout','gather']; const ma=['gather','grow-red','gather','skirmish','gather','skirmish','gather','skirmish'];
  for(let i=0;i<8;i++){await act(f,fa[i]);await m.waitForFunction(()=>window.game?.turn===1||window.game?.status==='finished'); if(i<7) await act(m,ma[i]); else break; await f.waitForTimeout(300);}
  const before=await f.evaluate(()=>window.game); if(before.players[0].score!==0||before.players[1].score!==4||before.players[0].duskBonus!==0||before.players[1].duskBonus!==0) throw Error('pre-dusk score mismatch');
  if(before.map.meadow!=='Fern'||before.map.lookout!=='Fern'||before.map.bridge!=='Moss'||before.map.relic!==null) throw Error('map ownership mismatch');
