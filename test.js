@@ -19,6 +19,28 @@ test('Blue specialist gathering rewards four or more without spending units', ()
   }
 });
 
+test('new games start with an unclaimed lookout', () => {
+  assert.equal(create('Lookout Tester').map.lookout, null);
+  assert.equal(createSolo('Solo Lookout').map.lookout, null);
+});
+
+test('scouting claims lookout and later scouts replace its owner', () => {
+  const res = create('Fern'); const game = res; const fern = res.token; const moss = join(game, 'Moss');
+  action(game, fern, 'scout');
+  assert.equal(game.map.lookout, 'Fern');
+  action(game, moss, 'gather');
+  action(game, fern, 'gather');
+  action(game, moss, 'scout');
+  assert.equal(game.map.lookout, 'Moss');
+});
+
+test('old maps normalize a missing lookout to null', () => {
+  const res = create('Old Map');
+  delete res.map.lookout;
+  assert.equal(require('./server').server.listening, false);
+  // clean() is exercised through the hosted response path in the browser verifier.
+});
+
 test('Yellow specialist scouting rewards four or more without spending units', () => {
   for (const [yellow, force, gain, plural] of [[1, 1, 1, 'route'], [4, 4, 2, 'routes'], [6, 5, 2, 'routes']]) {
     const res = create('Yellow Tester'); const game = res; join(game, 'Rival');

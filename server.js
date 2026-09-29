@@ -13,6 +13,7 @@ function code() { let c; do { c = crypto.randomBytes(3).toString('hex').toUpperC
 function phase(round) { return round <= 2 ? 'Dawn — grow your squad' : round <= 5 ? 'Afternoon — divide the crew' : 'Dusk — haul the treasure home'; }
 function squad(p) { return p.units.red + p.units.blue + p.units.yellow; }
 function clean(game) {
+  if (!game.map.lookout) game.map.lookout = null;
   let rivalPlan = null;
   if (game.mode === 'solo' && game.status === 'playing') {
     const sprout = game.players.find(p => p.name === 'Sprout');
@@ -23,8 +24,8 @@ function clean(game) {
   return { code: game.code, phase: phase(game.round), round: game.round, status: game.status, mode: game.mode, players: game.players.map(({ token, ...p }) => ({ ...p, squad: squad(p) })), turn: game.turn, turnName: game.players[game.turn]?.name, log: game.log.slice(-10), winner: game.winner, map: game.map, target: 12, rivalPlan };
 }
 function player(name, token) { const p = { name, token, score: 0, nectar: 1, insight: 0, units: { red: 2, blue: 2, yellow: 2 } }; return p; }
-function create(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'lobby', round:1, turn:0, players:[player(name, token)], map:{ meadow: null, bridge: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden.`] }; save(); return { ...games[c], token }; }
-function createSolo(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); const botToken = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'playing', mode:'solo', round:1, turn:0, players:[player(name, token), player('Sprout', botToken)], map:{ meadow: null, bridge: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden. Sprout is also here.`] }; save(); return { ...games[c], token }; }
+function create(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'lobby', round:1, turn:0, players:[player(name, token)], map:{ meadow: null, bridge: null, lookout: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden.`] }; save(); return { ...games[c], token }; }
+function createSolo(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); const botToken = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'playing', mode:'solo', round:1, turn:0, players:[player(name, token), player('Sprout', botToken)], map:{ meadow: null, bridge: null, lookout: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden. Sprout is also here.`] }; save(); return { ...games[c], token }; }
 function join(game, name) { if (game.status !== 'lobby' || game.players.length > 1) throw Error('This lobby is no longer available.'); const token = crypto.randomBytes(16).toString('hex'); game.players.push(player(name, token)); game.status='playing'; game.log.push(`${name} arrived. ${game.players[0].name} gives the first order.`); save(); return token; }
 function win(game, reason) {
   const players = [...game.players].sort((a, b) => b.score - a.score || b.insight - a.insight || squad(b) - squad(a));
@@ -59,6 +60,7 @@ function resolveAction(game, p, rival, kind) {
     const force = Math.min(5, p.units.yellow);
     const gain = force >= 4 ? 2 : 1;
     p.insight += gain;
+    game.map.lookout = p.name;
     game.log.push(`${p.name} sent ${force} Yellow Pikmin to Lookout Ridge (+${gain} ${gain === 1 ? 'route' : 'routes'}).`);
   }
   if (kind === 'skirmish') { 
