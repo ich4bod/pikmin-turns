@@ -2,7 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { create, join, action, phase, squad, createSolo, chooseBotAction } = require('./server');
 
-test('eight rounds visibly cross all match phases', () => { assert.match(phase(1), /Dawn/); assert.match(phase(3), /Afternoon/); assert.match(phase(6), /Dusk/); });
+test('eight rounds visibly cross all match phases', () => { 
+  assert.match(phase(1), /Dawn/); 
+  assert.match(phase(3), /Afternoon/); 
+  assert.match(phase(6), /Dusk/); 
+});
 
 test('Pikmin numbers change the strength of a bridge swarm', () => {
   const {game,token:a}=create('Alph'); const b=join(game,'Brittany');
@@ -30,28 +34,57 @@ test('solo creation performs automatic first response', () => {
   assert.equal(game.turn, 0);
 });
 
-test('Sprout priority table', () => {
-  const {game} = createSolo('Fern');
-  const p = game.players[1];
-  // 1. carry: squad >= 4, nectar >= 3, routes >= 1
-  p.units = { red: 2, blue: 2, yellow: 2 };
-  p.nectar = 3;
-  p.insight = 1;
-  assert.equal(chooseBotAction(game, p), 'scout');
-  // 2. recruit: nectar >= 2 and squad < 9
-  p.nectar = 2;
-  p.insight = 0;
-  assert.equal(chooseBotAction(game, p), 'scout');
-  // 3. scout: routes < 1 and squad >= 1
-  p.nectar = 1;
-  p.insight = 0;
-  assert.equal(chooseBotAction(game, p), 'scout');
+test('Sprout priority branches', () => {
+  const testPriority = (nectar, insight, squad, expected) => {
+    const {game} = createSolo('Test');
+    const p = game.players[1];
+    p.nectar = nectar;
+    p.insight = insight;
+    p.units = { red: 0, blue: 0, yellow: squad };
+    assert.equal(chooseBotAction(game, p), expected);
+  };
+
+  // 1. carry: squad >= 4, nectar >= 3, insight >= 1
+  testPriority(3, 1, 4, 'carry');
+  // 2. scout: insight == 0
+  testPriority(3, 0, 4, 'scout');
+  // 3. gather: nectar < 3
+  testPriority(2, 1, 4, 'gather');
   // 4. skirmish: squad >= 3
-  p.nectar = 1;
-  p.insight = 1;
-  p.units = { red: 1, blue: 1, yellow: 1 };
-  assert.equal(chooseBotAction(game, p), 'scout');
-  // 5. gather: squad >= 2
-  p.units = { red: 1, blue: 1, yellow: 0 };
-  assert.equal(chooseBotAction(game, p), 'scout');
+  testPriority(3, 1, 3, 'skirmish');
+  // 5. gather: otherwise
+  testPriority(3, 1, 2, 'gather');
+});
+
+test('Sprout eight-order sequence', () => {
+  const {game, token:a} = createSolo('Fern');
+  const p = game.players[1]; // Sprout
+  const human = game.players[0];
+
+  const expectedSequence = [
+    'Sprout sent 1 Yellow Pikmin to map a safe route (+1 route).', // scout
+    'Sprout sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).',     // gather
+    'Sprout assigned 4 Pikmin to carry the Sun Relic (+4 haul).', // carry
+    'Sprout sent 1 Yellow Pikmin to map a safe route (+1 route).', // scout
+    'Sprout sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).',     // gather
+    'Sprout sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).',     // gather
+    'Sprout assigned 4 Pikmin to carry the Sun Relic (+4 haul).', // carry
+    'Sprout sent 1 Yellow Pikmin to map a safe route (+1 route).'  // scout
+  ];
+
+  for (let i = 0; i < 8; i++) {
+    action(game, a, 'gather');
+  }
+
+  const sproutLog = game.log.filter(msg => msg.startsWith('Sprout '));
+  
+  assert.equal(sproutLog.length, 8);
+  for (let i = 0; i < 8; i++) {
+    assert.equal(sproutLog[i], expectedSequence[i], `Mismatch at index ${i}. Actual: ${sproutLog[i]}, Expected: ${expectedSequence[i]}`);
+  }
+
+  assert.equal(p.score, 8);
+  assert.equal(p.insight, 1);
+  assert.equal(p.nectar, 1);
+  assert.equal(squad(p), 6);
 });

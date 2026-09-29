@@ -12,7 +12,16 @@ function save() { fs.writeFileSync(DATA, JSON.stringify(games, null, 2)); }
 function code() { let c; do { c = crypto.randomBytes(3).toString('hex').toUpperCase(); } while (games[c]); return c; }
 function phase(round) { return round <= 2 ? 'Dawn — grow your squad' : round <= 5 ? 'Afternoon — divide the crew' : 'Dusk — haul the treasure home'; }
 function squad(p) { return p.units.red + p.units.blue + p.units.yellow; }
-function clean(game) { return { code: game.code, phase: phase(game.round), round: game.round, status: game.status, mode: game.mode, players: game.players.map(({ token, ...p }) => ({ ...p, squad: squad(p) })), turn: game.players[game.turn]?.name, log: game.log.slice(-10), winner: game.winner, map: game.map, target: 12 }; }
+function clean(game) {
+  let rivalPlan = null;
+  if (game.mode === 'solo' && game.status === 'playing') {
+    const sprout = game.players.find(p => p.name === 'Sprout');
+    const nextKind = chooseBotAction(game, sprout);
+    const labels = { scout: 'Map a route', gather: 'Gather nectar', carry: 'Carry the Sun Relic', skirmish: 'Swarm Mossy Bridge' };
+    rivalPlan = labels[nextKind];
+  }
+  return { code: game.code, phase: phase(game.round), round: game.round, status: game.status, mode: game.mode, players: game.players.map(({ token, ...p }) => ({ ...p, squad: squad(p) })), turn: game.players[game.turn]?.name, log: game.log.slice(-10), winner: game.winner, map: game.map, target: 12, rivalPlan };
+}
 function player(name, token) { return { name, token, score: 0, nectar: 1, insight: 0, units: { red: 2, blue: 2, yellow: 2 } }; }
 function create(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'lobby', round:1, turn:0, players:[player(name, token)], map:{ meadow: null, bridge: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden.`] }; save(); return { game:games[c], token }; }
 function createSolo(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); const botToken = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'playing', mode:'solo', round:1, turn:0, players:[player(name, token), player('Sprout', botToken)], map:{ meadow: null, bridge: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden. Sprout is also here.`] }; console.log('DEBUG: created solo game:', c, 'status:', games[c].status); save(); return { game:games[c], token }; }
@@ -40,7 +49,13 @@ function resolveAction(game, p, rival, kind) {
   if (kind === 'carry') { need(p, 4, 'Carrying the Sun Relic'); if (p.nectar < 3 || p.insight < 1) throw Error('Carry needs 3 nectar and a mapped route.'); p.nectar -= 3; p.insight -= 1; p.score += 4; game.map.relic = p.name; game.log.push(`${p.name} assigned 4 Pikmin to carry the Sun Relic (+4 haul).`); }
   if (kind === 'recruit') { if (p.nectar < 2) throw Error('Growing Pikmin needs 2 nectar.'); p.nectar -= 2; p.units.red += 1; p.units.blue += 1; p.units.yellow += 1; game.map.meadow = p.name; game.log.push(`${p.name} returned nectar to the Onion and grew 3 Pikmin (squad ${squad(p)}).`); }
 }
-function chooseBotAction(game, p) { return 'scout'; }
+function chooseBotAction(game, p) {
+  if (squad(p) >= 4 && p.nectar >= 3 && p.insight >= 1) return 'carry';
+  if (p.insight === 0) return 'scout';
+  if (p.nectar < 3) return 'gather';
+  if (squad(p) >= 3) return 'skirmish';
+  return 'gather';
+}
 
 function action(game, token, kind) {
   if (game.status !== 'playing') {
