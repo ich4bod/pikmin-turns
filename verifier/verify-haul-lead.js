@@ -142,16 +142,13 @@ const { chromium } = require('playwright-core');
 
     // 4. Complete to dusk
     for (let r = 6; r <= 8; r++) {
-        console.log(`Waiting for round ${r}...`);
         await waitForTurn(host.page, 'Host');
         await act(host.page, 'Gather');
         await waitForTurn(guest.page, 'Guest');
         await act(guest.page, 'Gather');
     }
-    console.log('Finished rounds, waiting for rematch button...');
     await host.page.waitForSelector('#rematch', { state: 'visible', timeout: 10000 }).catch(async () => {
-        const status = await host.page.textContent('#status');
-        console.log('Current status:', status);
+        await host.page.textContent('#status');
     });
 
     // Assert haul-lead is hidden
