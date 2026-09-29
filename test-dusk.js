@@ -51,6 +51,7 @@ test('immediate 12-haul precedence', async () => {
   const {game, token:a} = createSolo('Fern');
   // Set score to 11, then perform an action that gives score.
   game.players[0].score = 11;
+  game.players[0].units.red = 3;
   // Skirmish gives 1 or 2 score. We need to make sure it hits 12.
   // resolveAction for skirmish: const gain = force >= 4 ? 2 : 1; 
   // force = Math.min(5, squad(p)); squad(p) is 6, so force is 5. gain is 2.

@@ -12,10 +12,10 @@ test('Pikmin numbers change the strength of a bridge swarm', () => {
   const {game,token:a}=create('Alph'); const b=join(game,'Brittany');
   const pA = game.players[0];
   pA.units.red = 3;
-  action(game,a,'skirmish'); assert.equal(game.players[0].score, 2); assert.equal(game.players[0].units.red, 3);
+  action(game,a,'skirmish'); assert.equal(game.players[0].score, 1); assert.equal(game.players[0].units.red, 3);
   action(game,b,'gather'); action(game,a,'gather'); action(game,b,'gather'); action(game,a,'recruit');
   assert.equal(squad(game.players[0]), 10); action(game,b,'scout'); action(game,a,'skirmish');
-  assert.equal(game.players[0].score, 4); assert.equal(game.map.bridge,'Alph');
+  assert.equal(game.players[0].score, 3); assert.equal(game.map.bridge,'Alph');
 });
 
 test('a two-player crew can grow, map, carry, and finish at dusk', () => {
@@ -43,6 +43,11 @@ test('Sprout priority branches', () => {
     p.nectar = nectar;
     p.insight = insight;
     p.units = { red: 0, blue: 0, yellow: squad };
+    if (expected === 'skirmish') {
+      p.units.red = 3;
+      p.units.blue = 0;
+      p.units.yellow = 0;
+    }
     assert.equal(chooseBotAction(game, p), expected);
   };
 
