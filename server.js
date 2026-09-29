@@ -23,10 +23,18 @@ function clean(game) {
   }
   return { code: game.code, phase: phase(game.round), round: game.round, status: game.status, mode: game.mode, players: game.players.map(({ token, ...p }) => ({ ...p, squad: squad(p) })), turn: game.turn, turnName: game.players[game.turn]?.name, log: game.log.slice(-10), winner: game.winner, map: game.map, target: 12, rivalPlan };
 }
-function player(name, token) { const p = { name, token, score: 0, nectar: 1, insight: 0, units: { red: 2, blue: 2, yellow: 2 } }; return p; }
+function player(name, token) { const p = { name, token, score: 0, duskBonus: 0, nectar: 1, insight: 0, units: { red: 2, blue: 2, yellow: 2 } }; return p; }
 function create(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'lobby', round:1, turn:0, players:[player(name, token)], map:{ meadow: null, bridge: null, lookout: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden.`] }; save(); return { ...games[c], token }; }
 function createSolo(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); const botToken = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'playing', mode:'solo', round:1, turn:0, players:[player(name, token), player('Sprout', botToken)], map:{ meadow: null, bridge: null, lookout: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden. Sprout is also here.`] }; save(); return { ...games[c], token }; }
 function join(game, name) { if (game.status !== 'lobby' || game.players.length > 1) throw Error('This lobby is no longer available.'); const token = crypto.randomBytes(16).toString('hex'); game.players.push(player(name, token)); game.status='playing'; game.log.push(`${name} arrived. ${game.players[0].name} gives the first order.`); save(); return token; }
+function awardDuskControl(game) {
+  if (game.duskAwarded) return;
+  const counts = Object.fromEntries(game.players.map(p => [p.name, 0]));
+  for (const place of ['meadow', 'lookout', 'bridge', 'relic']) if (counts[game.map[place]] !== undefined) counts[game.map[place]]++;
+  for (const p of game.players) { p.duskBonus = counts[p.name]; p.score += p.duskBonus; }
+  game.duskAwarded = true;
+  game.log.push(`Dusk control adds ${game.players[0].duskBonus} haul for ${game.players[0].name} and ${game.players[1].duskBonus} haul for ${game.players[1].name}.`);
+}
 function win(game, reason) {
   const players = [...game.players].sort((a, b) => b.score - a.score || b.insight - a.insight || squad(b) - squad(a));
   game.status = 'finished';
@@ -114,6 +122,7 @@ function action(game, token, kind) {
     resolveAction(game, rival, p, botKind);
     if (rival.score >= 12) { win(game, 'The ship signal is full.'); save(); return; }
     if (game.round === 8) {
+      awardDuskControl(game);
       win(game, 'Dusk has reached the garden.');
       save();
       return;
@@ -124,6 +133,7 @@ function action(game, token, kind) {
     game.turn = (game.turn + 1) % 2;
     if (game.turn === 0) {
       if (game.round === 8) {
+        awardDuskControl(game);
         win(game, 'Dusk has reached the garden.');
         save();
         return;
@@ -138,4 +148,4 @@ async function body(req) { let text=''; for await (const part of req) { text += 
 const server = http.createServer(async (req,res) => {
   try { const u = new URL(req.url, `http://${req.headers.host}`); if (u.pathname === '/healthz') return respond(res,200,{ok:true}); if (req.method === 'POST' && u.pathname === '/api/lobbies') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=create(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x),token:x.token}); } if (req.method === 'POST' && u.pathname === '/api/solo') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=createSolo(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x),token:x.token}); } const match=u.pathname.match(/^\/api\/lobbies\/([A-Z0-9]+)(?:\/action)?$/); if (match) { const game=games[match[1]]; if (!game) return respond(res,404,{error:'Lobby not found.'}); if (req.method === 'GET') return respond(res,200,clean(game)); const b=await body(req); if (u.pathname.endsWith('/action')) { action(game,b.token,b.action); return respond(res,200,clean(game)); } const token=join(game,b.name?.trim().slice(0,24)); return respond(res,200,{...clean(game),token}); } const file = u.pathname === '/' ? 'index.html' : u.pathname.split('?')[0].slice(1); const target=path.resolve(PUBLIC,file); if (!target.startsWith(PUBLIC) || !fs.existsSync(target)) return respond(res,404,'Not found','text/plain'); return respond(res,200,fs.readFileSync(target), target.endsWith('.js')?'text/javascript':'text/html'); } catch (err) { return respond(res,400,{error:err.message}); } });
 if (require.main === module) server.listen(PORT);
-module.exports={create,join,action,phase,squad,server,createSolo,chooseBotAction,win};
+module.exports={create,join,action,phase,squad,server,createSolo,chooseBotAction,win,awardDuskControl};

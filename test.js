@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { create, join, action, phase, squad, createSolo, chooseBotAction } = require('./server');
+const { create, join, action, phase, squad, createSolo, chooseBotAction, awardDuskControl } = require('./server');
 
 test('eight rounds visibly cross all match phases', () => { 
   assert.match(phase(1), /Dawn/); 
@@ -17,6 +17,15 @@ test('Blue specialist gathering rewards four or more without spending units', ()
     assert.equal(game.players[0].units.blue, blue);
     assert.equal(game.log.at(-1), `Blue Tester sent ${force} Blue Pikmin to Nectar Meadow (+${gain} nectar).`);
   }
+});
+
+test('dusk control awards each owned place once before ranking', () => {
+  const res = create('Fern'); const game = res; const fern = res.token; const moss = join(game, 'Moss');
+  game.map = { meadow: 'Fern', lookout: 'Fern', bridge: 'Moss', relic: null };
+  awardDuskControl(game);
+  assert.equal(game.players[0].duskBonus, 2); assert.equal(game.players[1].duskBonus, 1);
+  assert.equal(game.players[0].score, 2); assert.equal(game.players[1].score, 1);
+  assert.equal(game.log.at(-1), 'Dusk control adds 2 haul for Fern and 1 haul for Moss.');
 });
 
 test('new games start with an unclaimed lookout', () => {
@@ -134,7 +143,7 @@ test('Sprout eight-order sequence', () => {
     assert.equal(sproutLog[i], expectedSequence[i], `Mismatch at index ${i}. Actual: ${sproutLog[i]}, Expected: ${expectedSequence[i]}`);
   }
 
-  assert.equal(p.score, 8);
+  assert.equal(p.score, 10);
   assert.equal(p.insight, 1);
   assert.equal(p.nectar, 1);
   assert.equal(squad(p), 6);
