@@ -35,19 +35,55 @@ function win(game, reason) {
   game.winner = isTie ? 'A tie — both crews escape at moonrise.' : `${p1.name} wins`;
   game.log.push(`${reason} ${game.winner}`);
 }
-function need(p, n, task) { if (squad(p) < n) throw Error(`${task} needs ${n} Pikmin; your squad has ${squad(p)}.`); }
+function colorName(c) { return c === 'red' ? 'Red' : c === 'blue' ? 'Blue' : 'Yellow'; }
+function need(p, n, task, color) { 
+  if (color) {
+    if (p.units[color] < n) throw Error(`${task} needs ${n} ${colorName(color)} Pikmin; you have ${p.units[color]}.`);
+  } else if (squad(p) < n) {
+    throw Error(`${task} needs ${n} Pikmin; your squad has ${squad(p)}.`);
+  }
+}
 function resolveAction(game, p, rival, kind) {
   if (!['gather','scout','skirmish','carry','recruit'].includes(kind)) throw Error('Unknown order.');
   console.log('DEBUG: resolveAction called, kind:', kind, 'player:', p.name, 'nectar:', p.nectar, 'insight:', p.insight, 'squad:', squad(p));
-  if (kind === 'gather') { need(p, 2, 'Nectar gathering'); p.nectar += 2; game.map.meadow = p.name; game.log.push(`${p.name} sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).`); }
+  if (kind === 'gather') { 
+    need(p, 2, 'Nectar gathering', 'blue'); 
+    p.nectar += 2; 
+    game.map.meadow = p.name; 
+    game.log.push(`${p.name} sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).`); 
+  }
   if (kind === 'scout') { 
-    need(p, 1, 'Scouting'); 
+    need(p, 1, 'Scouting', 'yellow'); 
     p.insight += 1; 
     game.log.push(`${p.name} sent 1 Yellow Pikmin to map a safe route (+1 route).`); 
   }
-  if (kind === 'skirmish') { need(p, 3, 'A bridge fight'); const force = Math.min(5, squad(p)); const gain = force >= 4 ? 2 : 1; rival.nectar = Math.max(0, rival.nectar - 1); p.score += gain; game.map.bridge = p.name; game.log.push(`${p.name} swarmed Mossy Bridge with ${force} Pikmin (+${gain} haul; ${rival.name} loses 1 nectar).`); }
-  if (kind === 'carry') { need(p, 4, 'Carrying the Sun Relic'); if (p.nectar < 3 || p.insight < 1) throw Error('Carry needs 3 nectar and a mapped route.'); p.nectar -= 3; p.insight -= 1; p.score += 4; game.map.relic = p.name; game.log.push(`${p.name} assigned 4 Pikmin to carry the Sun Relic (+4 haul).`); }
-  if (kind === 'recruit') { if (p.nectar < 2) throw Error('Growing Pikmin needs 2 nectar.'); p.nectar -= 2; p.units.red += 1; p.units.blue += 1; p.units.yellow += 1; game.map.meadow = p.name; game.log.push(`${p.name} returned nectar to the Onion and grew 3 Pikmin (squad ${squad(p)}).`); }
+  if (kind === 'skirmish') { 
+    need(p, 3, 'A bridge fight', 'red'); 
+    const force = Math.min(5, squad(p)); 
+    const gain = force >= 4 ? 2 : 1; 
+    rival.nectar = Math.max(0, rival.nectar - 1); 
+    p.score += gain; 
+    game.map.bridge = p.name; 
+    game.log.push(`${p.name} sent ${force} Red Pikmin across Mossy Bridge (+${gain} haul; ${rival.name} loses 1 nectar).`); 
+  }
+  if (kind === 'carry') { 
+    need(p, 4, 'Carrying the Sun Relic'); 
+    if (p.nectar < 3 || p.insight < 1) throw Error('Carry needs 3 nectar and a mapped route.'); 
+    p.nectar -= 3; 
+    p.insight -= 1; 
+    p.score += 4; 
+    game.map.relic = p.name; 
+    game.log.push(`${p.name} assigned 4 Pikmin to carry the Sun Relic (+4 haul).`); 
+  }
+  if (kind === 'recruit') { 
+    if (p.nectar < 2) throw Error('Growing Pikmin needs 2 nectar.'); 
+    p.nectar -= 2; 
+    p.units.red += 1; 
+    p.units.blue += 1; 
+    p.units.yellow += 1; 
+    game.map.meadow = p.name; 
+    game.log.push(`${p.name} returned nectar to the Onion and grew 3 Pikmin (squad ${squad(p)}).`); 
+  }
 }
 function chooseBotAction(game, p) {
   if (squad(p) >= 4 && p.nectar >= 3 && p.insight >= 1) return 'carry';

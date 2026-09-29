@@ -2,10 +2,10 @@ const { chromium } = require('playwright-core');
 
 const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
 const expected = [
-  'Needs 2 Pikmin',
-  'Needs 1 Pikmin',
-  'Needs 3 Pikmin',
-  'Needs 4 Pikmin · 3 nectar · 1 route',
+  'Needs 2 Blue',
+  'Needs 1 Yellow',
+  'Needs 3 Red',
+  'Needs 4 total · 3 nectar · 1 route',
   'Needs 2 nectar'
 ];
 

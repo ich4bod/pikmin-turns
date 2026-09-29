@@ -10,9 +10,11 @@ test('eight rounds visibly cross all match phases', () => {
 
 test('Pikmin numbers change the strength of a bridge swarm', () => {
   const {game,token:a}=create('Alph'); const b=join(game,'Brittany');
-  action(game,a,'skirmish'); assert.equal(game.players[0].score, 2); assert.equal(game.players[0].units.red, 2);
+  const pA = game.players[0];
+  pA.units.red = 3;
+  action(game,a,'skirmish'); assert.equal(game.players[0].score, 2); assert.equal(game.players[0].units.red, 3);
   action(game,b,'gather'); action(game,a,'gather'); action(game,b,'gather'); action(game,a,'recruit');
-  assert.equal(squad(game.players[0]), 9); action(game,b,'scout'); action(game,a,'skirmish');
+  assert.equal(squad(game.players[0]), 10); action(game,b,'scout'); action(game,a,'skirmish');
   assert.equal(game.players[0].score, 4); assert.equal(game.map.bridge,'Alph');
 });
 
@@ -87,4 +89,45 @@ test('Sprout eight-order sequence', () => {
   assert.equal(p.insight, 1);
   assert.equal(p.nectar, 1);
   assert.equal(squad(p), 6);
+});
+
+test('color-specific requirements and errors', () => {
+  const {game,token:a}=create('Alph'); const b=join(game,'Brittany');
+  const p = game.players[0];
+  
+  // 1. Test skirmish requires red
+  p.units.red = 2;
+  try {
+    action(game,a,'skirmish');
+    assert.fail('Should have thrown error for not enough red pikmin');
+  } catch (e) {
+    assert.equal(e.message, 'A bridge fight needs 3 Red Pikmin; you have 2.');
+  }
+
+  // 2. Test carry requires 4 pikmin (squad)
+  p.units.red = 1; p.units.blue = 1; p.units.yellow = 1; // total squad 3
+  try {
+    action(game,a,'carry');
+    assert.fail('Should have thrown error for not enough squad size');
+  } catch (e) {
+    assert.equal(e.message, 'Carrying the Sun Relic needs 4 Pikmin; your squad has 3.');
+  }
+  
+  // 3. Test scout requires yellow
+  p.units.yellow = 0;
+  try {
+    action(game,a,'scout');
+    assert.fail('Should have thrown error for not enough yellow pikmin');
+  } catch (e) {
+    assert.equal(e.message, 'Scouting needs 1 Yellow Pikmin; you have 0.');
+  }
+
+  // 4. Test gather requires blue
+  p.units.blue = 1;
+  try {
+    action(game,a,'gather');
+    assert.fail('Should have thrown error for not enough blue pikmin');
+  } catch (e) {
+    assert.equal(e.message, 'Nectar gathering needs 2 Blue Pikmin; you have 1.');
+  }
 });

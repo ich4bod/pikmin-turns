@@ -1,7 +1,7 @@
 const { chromium } = require('playwright-core');
 
 const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
-const text = '🔴 red + 🔵 blue + 🟡 yellow = your squad';
+const text = '🔴 red swarm · 🔵 blue gather · 🟡 yellow scout · all colors carry';
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
