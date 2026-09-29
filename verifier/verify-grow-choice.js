@@ -16,10 +16,10 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net/';
         const button = page.locator('#'+action);
         if ((await button.locator('small').textContent()).trim() !== desc) throw Error('wrong '+c+' description');
         if ((await button.locator('.order-requirement').textContent()).trim() !== 'Needs 2 nectar') throw Error('wrong '+c+' requirement');
-        if (await button.isDisabled()) throw Error(c+' unexpectedly disabled');
       }
       await page.getByRole('button',{name:'Gather'}).click();
       await page.waitForResponse(r => r.url().includes('/action') && r.status() === 200);
+      if (await page.locator('#'+action).isDisabled()) throw Error(c+' unexpectedly disabled after gathering');
       const before = await page.evaluate(() => ({...window.game.players.find(p=>p.name===window.commander).units}));
       await page.locator('#'+action).click();
       await page.waitForResponse(r => r.url().includes('/action') && r.status() === 200);
