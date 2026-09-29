@@ -19,7 +19,13 @@ const { chromium } = require('playwright-core');
         const match = status.match(/Round (\d+)/);
         return match ? parseInt(match[1]) : null;
     };
-    const getPlan = async () => (await page.$eval('#rival-plan', el => el.textContent)).trim();
+    const getPlan = async () => {
+      const text = await page.$eval('#rival-plan', el => el.textContent);
+      if (text.includes('Sprout is planning: ')) {
+        return text.replace('Sprout is planning: ', '').replace('.', '');
+      }
+      return text.trim();
+    };
     const getLog = async () => (await page.$eval('#log', el => el.textContent));
 
     const expectedSequence = [
