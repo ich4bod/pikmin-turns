@@ -4,8 +4,10 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  page.on('console', msg => console.log('BROWSER:', msg.text()));
+
   try {
-    const page = await browser.newPage();
     await page.goto(url);
     
     // 1. Start solo
@@ -34,14 +36,38 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
 
     // 3. Assert Swarm disabled at red 2 while Gather/Scout ready
     // Initial squad is 2/2/2
-    const isSwarmDisabled = await page.locator('button:has-text("Swarm bridge")').isDisabled();
-    if (!isSwarmDisabled) throw Error('Swarm should be disabled at 2 Red');
+    const isSwarmDisabled = await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Swarm bridge'));
+      return {
+        disabled: btn.disabled,
+        textContent: btn.textContent,
+        className: btn.className
+      };
+    });
+    console.log('Swarm button:', isSwarmDisabled);
+    if (!isSwarmDisabled.disabled) throw Error(`Swarm should be disabled at 2 Red. Button state: ${JSON.stringify(isSwarmDisabled)}`);
     
-    const isGatherReady = await page.locator('button:has-text("Gather")').isEnabled();
-    if (!isGatherReady) throw Error('Gather should be ready at 2 Blue');
+    const isGatherReady = await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Gather'));
+      return {
+        enabled: !btn.disabled,
+        textContent: btn.textContent,
+        className: btn.className
+      };
+    });
+    console.log('Gather button:', isGatherReady);
+    if (!isGatherReady.enabled) throw Error(`Gather should be ready at 2 Blue. Button state: ${JSON.stringify(isGatherReady)}`);
 
-    const isScoutReady = await page.locator('button:has-text("Scout")').isEnabled();
-    if (!isScoutReady) throw Error('Scout should be ready at 2 Yellow');
+    const isScoutReady = await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Scout'));
+      return {
+        enabled: !btn.disabled,
+        textContent: btn.textContent,
+        className: btn.className
+      };
+    });
+    console.log('Scout button:', isScoutReady);
+    if (!isScoutReady.enabled) throw Error(`Scout should be ready at 2 Yellow. Button state: ${JSON.stringify(isScoutReady)}`);
 
     // 4. Gather then Grow
     const act = async (name) => {
@@ -64,7 +90,10 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
     if (p2.units.red !== 3 || p2.units.blue !== 3 || p2.units.yellow !== 3) throw Error(`expected 3/3/3 units, got ${JSON.stringify(p2.units)}`);
 
     // 5. Assert counts 3/3/3 and Swarm ready
-    const isSwarmReady = await page.locator('button:has-text("Swarm bridge")').isEnabled();
+    const isSwarmReady = await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Swarm bridge'));
+      return !btn.disabled;
+    });
     if (!isSwarmReady) throw Error('Swarm should be ready at 3/3/3');
 
     // 6. Swarm and assert exact Red dispatch with +1 haul
@@ -82,7 +111,10 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
     if (p3.score !== 1) throw Error(`expected score 1, got ${p3.score}`);
 
     // 7. Ensure Carry requirement still says total
-    const carryReq = await page.locator('button:has-text("Carry relic") .order-requirement').textContent();
+    const carryReq = await page.evaluate(() => {
+        const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Carry relic'));
+        return btn.querySelector('.order-requirement').textContent;
+    });
     if (carryReq.trim() !== 'Needs 4 total · 3 nectar · 1 route') {
         throw Error(`expected carry requirement "${'Needs 4 total · 3 nectar · 1 route'}", got "${carryReq}"`);
     }
