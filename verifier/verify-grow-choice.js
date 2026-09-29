@@ -17,17 +17,19 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net/';
         if ((await button.locator('small').textContent()).trim() !== desc) throw Error('wrong '+c+' description');
         if ((await button.locator('.order-requirement').textContent()).trim() !== 'Needs 2 nectar') throw Error('wrong '+c+' requirement');
       }
+      const [heading,desc,action] = cards[color];
+      const button = page.locator('#'+action);
       await page.getByRole('button',{name:'Gather'}).click();
       await page.waitForResponse(r => r.url().includes('/action') && r.status() === 200);
-      if (await page.locator('#'+action).isDisabled()) throw Error(c+' unexpectedly disabled after gathering');
+      if (await button.isDisabled()) throw Error(color+' unexpectedly disabled after gathering');
       const before = await page.evaluate(() => ({...window.game.players.find(p=>p.name===window.commander).units}));
-      await page.locator('#'+action).click();
+      await button.click();
       await page.waitForResponse(r => r.url().includes('/action') && r.status() === 200);
       const p = await page.evaluate(() => window.game.players.find(p=>p.name===window.commander));
-      if (p.units[c] !== 4 || p.units.red + p.units.blue + p.units.yellow !== 8) throw Error('wrong '+c+' delta');
-      for (const other of ['red','blue','yellow']) if (other !== c && p.units[other] !== before[other]) throw Error(other+' changed during '+c);
-      const label = c[0].toUpperCase()+c.slice(1);
-      if (!(await page.locator('.logline').allTextContents()).some(x => x.includes('returned nectar to the Onion and grew 2 '+label+' Pikmin (squad 8).'))) throw Error('wrong '+c+' log');
+      if (p.units[color] !== 4 || p.units.red + p.units.blue + p.units.yellow !== 8) throw Error('wrong '+color+' delta');
+      for (const other of ['red','blue','yellow']) if (other !== color && p.units[other] !== before[other]) throw Error(other+' changed during '+color);
+      const label = color[0].toUpperCase()+color.slice(1);
+      if (!(await page.locator('.logline').allTextContents()).some(x => x.includes('returned nectar to the Onion and grew 2 '+label+' Pikmin (squad 8).'))) throw Error('wrong '+color+' log');
       await page.close();
     }
     await fresh('red'); await fresh('blue'); await fresh('yellow');
