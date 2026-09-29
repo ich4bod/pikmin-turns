@@ -1,7 +1,7 @@
 const { createSolo } = require('./server');
 const codes = new Set();
 for(let i=0; i<100; i++) {
-    const {game} = createSolo('test');
+    const res = createSolo('test'); const game = res;
     if (codes.has(game.code)) {
         console.log('COLLISION:', game.code);
     }

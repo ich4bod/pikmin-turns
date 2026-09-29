@@ -3,13 +3,13 @@ const { createSolo, action, create } = require('./server');
 async function run() {
     try {
         console.log('--- Test 1: Solo Dusk ---');
-        const {game:g1, token:t1} = createSolo('Fern');
+        const res = createSolo('Fern'); const g1 = res; const t1 = res.token;
         for(let i=0; i<7; i++) action(g1, t1, 'gather');
         action(g1, t1, 'gather'); // This should be round 8, so it should finish
         console.log('G1 status:', g1.status);
 
         console.log('--- Test 2: Duel Dusk ---');
-        const {game:g2, token:a} = create('Alph');
+        const res = create('Alph'); const g2 = res; const a = res.token;
         const b=require('./server').join(g2,'Brittany');
         for(let i=0; i<7; i++) {
             action(g2, a, 'gather');
@@ -19,7 +19,7 @@ async function run() {
         console.log('G2 status:', g2.status);
 
         console.log('--- Test 3: Immediate 12-haul ---');
-        const {game:g3, token:t3} = createSolo('Fern');
+        const res = createSolo('Fern'); const g3 = res; const t3 = res.token;
         console.log('G3 initial status:', g3.status);
         // Round 1: 3 actions -> R4
         action(g3, t3, 'gather');

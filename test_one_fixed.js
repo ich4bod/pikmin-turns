@@ -2,7 +2,7 @@ const { createSolo, action } = require('./server');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 test('immediate 12-haul precedence', async () => {
-  const {game, token:a} = createSolo('Fern');
+  const res = createSolo('Fern'); const game = res; const a = res.token;
   // Round 1: gather, gather, scout -> Round 2
   action(game, a, 'gather');
   action(game, a, 'gather');

@@ -4,7 +4,7 @@ const { create, createSolo, action } = require('./server');
 
 test('color-specific requirements', async (t) => {
   await t.test('unavailable red at 2, then Grow to 3, then successful Swarm', () => {
-    const {game, token:a} = createSolo('Alph');
+    const res = createSolo('Alph'); const game = res; const a = res.token;
     const p = game.players[0]; 
     
     p.units.red = 2;
@@ -34,7 +34,7 @@ test('color-specific requirements', async (t) => {
   });
 
   await t.test('unchanged Carry total rule', () => {
-    const {game, token:a} = createSolo('Alph');
+    const res = createSolo('Alph'); const game = res; const a = res.token;
     const p = game.players[0];
 
     // Carry needs total squad >= 4

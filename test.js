@@ -9,7 +9,7 @@ test('eight rounds visibly cross all match phases', () => {
 });
 
 test('Pikmin numbers change the strength of a bridge swarm', () => {
-  const {game,token:a}=create('Alph'); const b=join(game,'Brittany');
+  const res = create('Alph'); const game = res; const a = res.token; const b=join(game,'Brittany');
   const pA = game.players[0];
   pA.units.red = 3;
   action(game,a,'skirmish'); assert.equal(game.players[0].score, 1); assert.equal(game.players[0].units.red, 3);
@@ -19,7 +19,7 @@ test('Pikmin numbers change the strength of a bridge swarm', () => {
 });
 
 test('a two-player crew can grow, map, carry, and finish at dusk', () => {
-  const {game,token:a}=create('Olimar'); const b=join(game,'Louie');
+  const res = create('Olimar'); const game = res; const a = res.token; const b=join(game,'Louie');
   action(game,a,'gather'); action(game,b,'gather'); action(game,a,'scout'); action(game,b,'scout'); action(game,a,'carry');
   assert.equal(game.players[0].score,4); assert.equal(game.map.relic,'Olimar');
   for(let i=0;i<11;i++) action(game, game.players[game.turn].token, 'gather');
@@ -27,7 +27,7 @@ test('a two-player crew can grow, map, carry, and finish at dusk', () => {
 });
 
 test('solo creation performs automatic first response', () => {
-  const {game, token:a} = createSolo('Fern');
+  const res = createSolo('Fern'); const game = res; const a = res.token;
   assert.equal(game.mode, 'solo');
   assert.equal(game.players[1].name, 'Sprout');
   action(game, a, 'gather');
@@ -38,7 +38,7 @@ test('solo creation performs automatic first response', () => {
 
 test('Sprout priority branches', () => {
   const testPriority = (nectar, insight, squad, expected) => {
-    const {game} = createSolo('Test');
+    const res = createSolo('Test'); const game = res;
     const p = game.players[1];
     p.nectar = nectar;
     p.insight = insight;
@@ -64,7 +64,7 @@ test('Sprout priority branches', () => {
 });
 
 test('Sprout eight-order sequence', () => {
-  const {game, token:a} = createSolo('Fern');
+  const res = createSolo('Fern'); const game = res; const a = res.token;
   const p = game.players[1]; // Sprout
   const human = game.players[0];
 
@@ -97,7 +97,7 @@ test('Sprout eight-order sequence', () => {
 });
 
 test('color-specific requirements and errors', () => {
-  const {game,token:a}=create('Alph'); const b=join(game,'Brittany');
+  const res = create('Alph'); const game = res; const a = res.token; const b=join(game,'Brittany');
   const p = game.players[0];
   
   // 1. Test skirmish requires red

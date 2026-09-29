@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { create, join, action, phase, squad, createSolo, chooseBotAction, win } = require('./server');
 
 test('solo dusk at round 8', async () => {
-  const {game, token:a} = createSolo('Fern');
+  const res = createSolo('Fern'); const game = res; const a = res.token;
   assert.equal(game.status, 'playing');
   for(let i=0; i<7; i++) action(game, a, 'gather');
   assert.equal(game.round, 8);
@@ -15,7 +15,7 @@ test('solo dusk at round 8', async () => {
 });
 
 test('duel dusk only after player two', async () => {
-  const {game, token:a} = create('Fern');
+  const res = create('Fern'); const game = res; const a = res.token;
   const b = join(game, 'Bob');
   assert.equal(game.round, 1);
   assert.equal(game.turn, 0);
@@ -48,7 +48,7 @@ test('duel dusk only after player two', async () => {
 });
 
 test('immediate 12-haul precedence', async () => {
-  const {game, token:a} = createSolo('Fern');
+  const res = createSolo('Fern'); const game = res; const a = res.token;
   // Set score to 11, then perform an action that gives score.
   game.players[0].score = 11;
   game.players[0].units.red = 3;
@@ -63,7 +63,7 @@ test('immediate 12-haul precedence', async () => {
 
 test('tiebreaking', async () => {
   // 1. Score tiebreak (insight)
-  const {game:g1, token:a1} = create('P1');
+  const res1 = create('P1'); const g1 = res1; const a1 = res1.token;
   const b1 = join(g1, 'P2');
   g1.players[0].score = 10; g1.players[0].insight = 5;
   g1.players[1].score = 10; g1.players[1].insight = 2;
@@ -71,7 +71,7 @@ test('tiebreaking', async () => {
   assert.equal(g1.winner, 'P1 wins');
 
   // 2. Insight tiebreak (squad)
-  const {game:g2, token:a2} = create('P1');
+  const res2 = create('P1'); const g2 = res2; const a2 = res2.token;
   const b2 = join(g2, 'P2');
   g2.players[0].score = 10; g2.players[0].insight = 5; g2.players[0].units = {red:2, blue:2, yellow:2}; // squad 6
   g2.players[1].score = 10; g2.players[1].insight = 5; g2.players[1].units = {red:1, blue:1, yellow:1}; // squad 3
@@ -79,7 +79,7 @@ test('tiebreaking', async () => {
   assert.equal(g2.winner, 'P1 wins');
 
   // 3. True tie
-  const {game:g3, token:a3} = create('P1');
+  const res3 = create('P1'); const g3 = res3; const a3 = res3.token;
   const b3 = join(g3, 'P2');
   g3.players[0].score = 10; g3.players[0].insight = 5; g3.players[0].units = {red:2, blue:2, yellow:2};
   g3.players[1].score = 10; g3.players[1].insight = 5; g3.players[1].units = {red:2, blue:2, yellow:2};

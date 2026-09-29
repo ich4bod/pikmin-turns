@@ -1,6 +1,6 @@
 const { createSolo, action } = require('./server');
 try {
-  const {game, token:a} = createSolo('Fern');
+  const res = createSolo('Fern'); const game = res; const a = res.token;
   console.log('Initial:', game.round, game.status);
   // Round 1: gather, gather, scout -> Round 2
   action(game, a, 'gather');

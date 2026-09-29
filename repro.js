@@ -2,7 +2,7 @@ const { createSolo, action } = require('./server');
 const assert = require('node:assert/strict');
 
 async function reproduce() {
-    const {game, token:a} = createSolo('Fern');
+    const res = createSolo('Fern'); const game = res; const a = res.token;
     console.log('Initial round:', game.round);
     for(let i=0; i<7; i++) {
         action(game, a, 'gather');
