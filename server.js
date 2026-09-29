@@ -45,7 +45,7 @@ function need(p, n, task, color) {
   }
 }
 function resolveAction(game, p, rival, kind) {
-  if (!['gather','scout','skirmish','carry','recruit'].includes(kind)) throw Error('Unknown order.');
+  if (!['gather','scout','skirmish','carry','grow-red','grow-blue','grow-yellow'].includes(kind)) throw Error('Unknown order.');
   if (kind === 'gather') { 
     need(p, 2, 'Nectar gathering', 'blue'); 
     p.nectar += 2; 
@@ -75,14 +75,13 @@ function resolveAction(game, p, rival, kind) {
     game.map.relic = p.name; 
     game.log.push(`${p.name} assigned 4 Pikmin to carry the Sun Relic (+4 haul).`); 
   }
-  if (kind === 'recruit') { 
-    if (p.nectar < 2) throw Error('Growing Pikmin needs 2 nectar.'); 
-    p.nectar -= 2; 
-    p.units.red += 1; 
-    p.units.blue += 1; 
-    p.units.yellow += 1; 
-    game.map.meadow = p.name; 
-    game.log.push(`${p.name} returned nectar to the Onion and grew 3 Pikmin (squad ${squad(p)}).`); 
+  if (kind.startsWith('grow-')) {
+    const color = kind.slice(5);
+    if (p.nectar < 2) throw Error('Growing Pikmin needs 2 nectar.');
+    p.nectar -= 2;
+    p.units[color] += 2;
+    game.map.meadow = p.name;
+    game.log.push(`${p.name} returned nectar to the Onion and grew 2 ${colorName(color)} Pikmin (squad ${squad(p)}).`);
   }
 }
 function chooseBotAction(game, p) {

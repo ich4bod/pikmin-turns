@@ -13,8 +13,8 @@ test('Pikmin numbers change the strength of a bridge swarm', () => {
   const pA = game.players[0];
   pA.units.red = 3;
   action(game,a,'skirmish'); assert.equal(game.players[0].score, 1); assert.equal(game.players[0].units.red, 3);
-  action(game,b,'gather'); action(game,a,'gather'); action(game,b,'gather'); action(game,a,'recruit');
-  assert.equal(squad(game.players[0]), 10); action(game,b,'scout'); action(game,a,'skirmish');
+  action(game,b,'gather'); action(game,a,'gather'); action(game,b,'gather'); action(game,a,'grow-red');
+  assert.equal(squad(game.players[0]), 9); action(game,b,'scout'); action(game,a,'skirmish');
   assert.equal(game.players[0].score, 3); assert.equal(game.map.bridge,'Alph');
 });
 
@@ -94,6 +94,31 @@ test('Sprout eight-order sequence', () => {
   assert.equal(p.insight, 1);
   assert.equal(p.nectar, 1);
   assert.equal(squad(p), 6);
+});
+
+test('chosen growth changes only the requested color and logs the total', () => {
+  for (const color of ['red', 'blue', 'yellow']) {
+    const res = createSolo('Grower');
+    const game = res;
+    const before = { ...game.players[0].units };
+    game.players[0].nectar = 2;
+    action(game, res.token, `grow-${color}`);
+    assert.equal(game.players[0].nectar, 0);
+    for (const other of ['red', 'blue', 'yellow']) {
+      assert.equal(game.players[0].units[other], before[other] + (other === color ? 2 : 0));
+    }
+    const label = color[0].toUpperCase() + color.slice(1);
+    assert.ok(game.log.includes(`Grower returned nectar to the Onion and grew 2 ${label} Pikmin (squad 8).`));
+  }
+});
+
+test('chosen growth shares the nectar error and rejects old recruit', () => {
+  for (const kind of ['grow-red', 'grow-blue', 'grow-yellow']) {
+    const res = createSolo('Grower');
+    assert.throws(() => action(res, res.token, kind), { message: 'Growing Pikmin needs 2 nectar.' });
+  }
+  const res = createSolo('Grower');
+  assert.throws(() => action(res, res.token, 'recruit'), { message: 'Unknown order.' });
 });
 
 test('color-specific requirements and errors', () => {

@@ -10,7 +10,7 @@ const url = process.argv[2];
   const pageMoss = await contextMoss.newPage();
 
   const act = async (page, actionName) => {
-    await page.click(`button.order:has-text("${actionName}")`);
+    await page.click(`button.order[onclick*="'${actionName}'"]`);
     await page.waitForTimeout(1500);
   };
 
@@ -19,6 +19,7 @@ const url = process.argv[2];
     await pageFern.goto(url);
     await pageFern.fill('#name', 'Fern');
     await pageFern.click('button:has-text("Plant a landing site")');
+    await pageFern.waitForSelector('#game', { state: 'visible' });
     const code = await pageFern.$eval('#code-value', el => el.textContent.trim());
     
     await pageMoss.goto(url);
@@ -26,8 +27,15 @@ const url = process.argv[2];
     await pageMoss.fill('#code', code);
     await pageMoss.click('button:has-text("Land here")');
     
-    await pageFern.waitForSelector('#status:not(:has-text("Waiting for your rival"))');
-    await pageMoss.waitForSelector('#status:not(:has-text("Waiting for your rival"))');
+    await pageFern.waitForSelector('#status', { state: 'visible' });
+    await pageFern.waitForFunction(() => {
+      const status = document.getElementById('status').textContent;
+      return status.trim() !== 'Waiting for your rival';
+    });
+    await pageMoss.waitForFunction(() => {
+      const status = document.getElementById('status').textContent;
+      return status.trim() !== 'Waiting for your rival';
+    });
 
     // Assert hidden round 1
     const edgeVisibleR1 = await pageFern.$eval('#dusk-edge', el => window.getComputedStyle(el).display !== 'none');

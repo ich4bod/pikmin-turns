@@ -16,7 +16,7 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
     await page.waitForResponse(res => res.url().includes('/api/solo') && res.status() === 201);
 
     // 2. Assert exact key and labels
-    const squadKey = '🔴 red swarm · 🔵 blue gather · 🟡 yellow scout · all colors carry';
+    const squadKey = '🔴 red swarm · 🔵 blue gather · 🟡 yellow scout · all colors carry · choose what the Onion grows';
     const keyText = await page.locator('#squad-key').textContent();
     if (keyText !== squadKey) throw Error(`expected squad key: ${squadKey}, got: ${keyText}`);
 
@@ -25,6 +25,8 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
       'Needs 1 Yellow',
       'Needs 3 Red',
       'Needs 4 total · 3 nectar · 1 route',
+      'Needs 2 nectar',
+      'Needs 2 nectar',
       'Needs 2 nectar'
     ];
     const actualLabels = await page.locator('.order-requirement').allTextContents();

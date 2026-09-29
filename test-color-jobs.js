@@ -26,8 +26,8 @@ test('color-specific requirements', async (t) => {
     // 3. Set turn to 0 and increment round.
     action(game, a, 'gather'); 
     
-    action(game, a, 'recruit'); 
-    assert.equal(p.units.red, 3);
+    action(game, a, 'grow-red'); 
+    assert.equal(p.units.red, 4);
 
     // 3. Successful Swarm
     assert.doesNotThrow(() => action(game, a, 'skirmish'));
