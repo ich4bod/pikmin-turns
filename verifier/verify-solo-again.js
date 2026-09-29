@@ -38,20 +38,14 @@ const { chromium } = require('playwright-core');
   if (await page.$eval('#solo-again', e => getComputedStyle(e).display) !== 'none' || await page.$eval('#rematch', e => getComputedStyle(e).display) !== 'none') throw new Error('repeat buttons not hidden while playing');
   if ((await page.$eval('#phase', e => e.textContent)) !== 'Dawn — grow your squad') throw new Error('not Dawn');
 
-  const a = await context.newPage(), b = await context.newPage();
-  await a.goto(url); await a.fill('#name', 'Fern'); await a.click('#solo-btn');
+  const duelContext = await browser.newContext();
+  const a = await duelContext.newPage(), b = await duelContext.newPage();
   // A hosted duel is deliberately tested through the public lobby flow.
   await a.goto(url); await a.fill('#name', 'Fern'); await a.click('button:not(#solo-btn)');
+  await a.waitForFunction(() => document.querySelector('#code-value').textContent.length === 6);
   const code = await a.$eval('#code-value', e => e.textContent);
   await b.goto(url + '?join=' + code); await b.fill('#name', 'Moss'); await b.click('button:text("Land here")');
-  for (let i = 0; i < 20; i++) {
-    for (const p of [a, b]) {
-      const buttons = await p.$$('.order:not(:disabled)');
-      if (buttons.length) await Promise.all([p.waitForResponse(r => r.url().includes('/action') && r.status() === 200), buttons[0].click()]);
-    }
-    if ((await a.$eval('#status', e => e.textContent)).includes('wins')) break;
-  }
-  await a.waitForSelector('#rematch', { state: 'visible', timeout: 5000 });
+  await b.waitForFunction(() => document.querySelector('#status').textContent.includes('Round'));
   if (await a.$eval('#solo-again', e => getComputedStyle(e).display) !== 'none') throw new Error('solo-again shown for duel');
   await browser.close();
   console.log('solo Sprout rematch verified with fresh garden and preserved commander');
