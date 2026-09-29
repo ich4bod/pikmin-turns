@@ -5,7 +5,7 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
-  page.on('console', msg => console.log('BROWSER:', msg.text()));
+  page.on('console', msg => console.error('BROWSER:', msg.text()));
 
   try {
     await page.goto(url);
@@ -44,7 +44,7 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
         className: btn.className
       };
     });
-    console.log('Swarm button:', isSwarmDisabled);
+    console.error('Swarm button:', isSwarmDisabled);
     if (!isSwarmDisabled.disabled) throw Error(`Swarm should be disabled at 2 Red. Button state: ${JSON.stringify(isSwarmDisabled)}`);
     
     const isGatherReady = await page.evaluate(() => {
@@ -55,7 +55,7 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
         className: btn.className
       };
     });
-    console.log('Gather button:', isGatherReady);
+    console.error('Gather button:', isGatherReady);
     if (!isGatherReady.enabled) throw Error(`Gather should be ready at 2 Blue. Button state: ${JSON.stringify(isGatherReady)}`);
 
     const isScoutReady = await page.evaluate(() => {
@@ -66,7 +66,7 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net';
         className: btn.className
       };
     });
-    console.log('Scout button:', isScoutReady);
+    console.error('Scout button:', isScoutReady);
     if (!isScoutReady.enabled) throw Error(`Scout should be ready at 2 Yellow. Button state: ${JSON.stringify(isScoutReady)}`);
 
     // 4. Gather then Grow
