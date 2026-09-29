@@ -5,7 +5,28 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net/';
   try {
     async function fresh(color) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-      await page.goto(url); await page.locator('#name').fill('Choice Tester');
+      await page.goto(url); await page.evaluate(() => document.fonts.ready);
+      await page.evaluate(() => {
+        if (window.innerWidth !== 390) throw Error('page width is not 390px');
+        if (document.documentElement.scrollWidth > 390) throw Error('horizontal overflow');
+        const lobby = document.querySelector('#lobby').getBoundingClientRect();
+        const rules = document.querySelector('.rules').getBoundingClientRect();
+        const controlRule = document.querySelector('#control-rule').getBoundingClientRect();
+        if (Math.abs(controlRule.width - rules.width) > 2) throw Error('control rule width does not match rule grid');
+        const controls = ['#name', 'button[onclick="host()"]', '#solo-btn', '#code', 'button[onclick="join()"]'].map(selector => document.querySelector(selector));
+        for (const control of controls) {
+          const rect = control.getBoundingClientRect();
+          if (rect.left < lobby.left || rect.right > lobby.right || rect.top < lobby.top || rect.bottom > lobby.bottom) throw Error('lobby control outside card');
+        }
+        const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        const name = controls[0].getBoundingClientRect();
+        const host = controls[1].getBoundingClientRect();
+        const solo = controls[2].getBoundingClientRect();
+        const code = controls[3].getBoundingClientRect();
+        const join = controls[4].getBoundingClientRect();
+        if (overlaps(name, host) || overlaps(name, solo) || overlaps(code, join)) throw Error('lobby button overlaps input');
+      });
+      await page.locator('#name').fill('Choice Tester');
       await page.getByRole('button', {name:'Play solo'}).click();
       await page.waitForResponse(r => r.url().includes('/api/solo') && r.status() === 201);
       if (await page.evaluate(() => document.documentElement.scrollWidth > 390)) throw Error('horizontal overflow');
