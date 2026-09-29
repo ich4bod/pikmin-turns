@@ -40,14 +40,14 @@ const { chromium } = require('playwright-core');
     ];
 
     const expectedDispatches = [
-      'Sprout sent 1 Yellow Pikmin to map a safe route (+1 route).',
+      'Sprout sent 1 Yellow Pikmin to Lookout Ridge (+1 route).',
       'Sprout sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).',
       'Sprout assigned 4 Pikmin to carry the Sun Relic (+4 haul).',
-      'Sprout sent 1 Yellow Pikmin to map a safe route (+1 route).',
+      'Sprout sent 1 Yellow Pikmin to Lookout Ridge (+1 route).',
       'Sprout sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).',
       'Sprout sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).',
       'Sprout assigned 4 Pikmin to carry the Sun Relic (+4 haul).',
-      'Sprout sent 1 Yellow Pikmin to map a safe route (+1 route).'
+      'Sprout sent 1 Yellow Pikmin to Lookout Ridge (+1 route).'
     ];
 
     // Loop through the 8 rounds

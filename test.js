@@ -8,6 +8,28 @@ test('eight rounds visibly cross all match phases', () => {
   assert.match(phase(6), /Dusk/); 
 });
 
+test('Blue specialist gathering rewards four or more without spending units', () => {
+  for (const [blue, force, gain] of [[2, 2, 2], [4, 4, 3], [6, 5, 3]]) {
+    const res = create('Blue Tester'); const game = res; join(game, 'Rival');
+    game.players[0].units.blue = blue;
+    action(game, res.token, 'gather');
+    assert.equal(game.players[0].nectar, 1 + gain);
+    assert.equal(game.players[0].units.blue, blue);
+    assert.equal(game.log.at(-1), `Blue Tester sent ${force} Blue Pikmin to Nectar Meadow (+${gain} nectar).`);
+  }
+});
+
+test('Yellow specialist scouting rewards four or more without spending units', () => {
+  for (const [yellow, force, gain, plural] of [[1, 1, 1, 'route'], [4, 4, 2, 'routes'], [6, 5, 2, 'routes']]) {
+    const res = create('Yellow Tester'); const game = res; join(game, 'Rival');
+    game.players[0].units.yellow = yellow;
+    action(game, res.token, 'scout');
+    assert.equal(game.players[0].insight, gain);
+    assert.equal(game.players[0].units.yellow, yellow);
+    assert.equal(game.log.at(-1), `Yellow Tester sent ${force} Yellow Pikmin to Lookout Ridge (+${gain} ${plural}).`);
+  }
+});
+
 test('Pikmin numbers change the strength of a bridge swarm', () => {
   const res = create('Alph'); const game = res; const a = res.token; const b=join(game,'Brittany');
   const pA = game.players[0];
@@ -69,14 +91,14 @@ test('Sprout eight-order sequence', () => {
   const human = game.players[0];
 
   const expectedSequence = [
-    'Sprout sent 1 Yellow Pikmin to map a safe route (+1 route).', // scout
+    'Sprout sent 2 Yellow Pikmin to Lookout Ridge (+1 route).', // scout
     'Sprout sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).',     // gather
     'Sprout assigned 4 Pikmin to carry the Sun Relic (+4 haul).', // carry
-    'Sprout sent 1 Yellow Pikmin to map a safe route (+1 route).', // scout
+    'Sprout sent 2 Yellow Pikmin to Lookout Ridge (+1 route).', // scout
     'Sprout sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).',     // gather
     'Sprout sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).',     // gather
     'Sprout assigned 4 Pikmin to carry the Sun Relic (+4 haul).', // carry
-    'Sprout sent 1 Yellow Pikmin to map a safe route (+1 route).'  // scout
+    'Sprout sent 2 Yellow Pikmin to Lookout Ridge (+1 route).'  // scout
   ];
 
   for (let i = 0; i < 8; i++) {

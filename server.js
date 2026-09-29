@@ -48,14 +48,18 @@ function resolveAction(game, p, rival, kind) {
   if (!['gather','scout','skirmish','carry','grow-red','grow-blue','grow-yellow'].includes(kind)) throw Error('Unknown order.');
   if (kind === 'gather') { 
     need(p, 2, 'Nectar gathering', 'blue'); 
-    p.nectar += 2; 
-    game.map.meadow = p.name; 
-    game.log.push(`${p.name} sent 2 Blue Pikmin to Nectar Meadow (+2 nectar).`); 
+    const force = Math.min(5, p.units.blue);
+    const gain = force >= 4 ? 3 : 2;
+    p.nectar += gain;
+    game.map.meadow = p.name;
+    game.log.push(`${p.name} sent ${force} Blue Pikmin to Nectar Meadow (+${gain} nectar).`);
   }
   if (kind === 'scout') { 
     need(p, 1, 'Scouting', 'yellow'); 
-    p.insight += 1; 
-    game.log.push(`${p.name} sent 1 Yellow Pikmin to map a safe route (+1 route).`); 
+    const force = Math.min(5, p.units.yellow);
+    const gain = force >= 4 ? 2 : 1;
+    p.insight += gain;
+    game.log.push(`${p.name} sent ${force} Yellow Pikmin to Lookout Ridge (+${gain} ${gain === 1 ? 'route' : 'routes'}).`);
   }
   if (kind === 'skirmish') { 
     need(p, 3, 'A bridge fight', 'red'); 

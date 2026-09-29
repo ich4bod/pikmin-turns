@@ -30,7 +30,7 @@ const { chromium } = require('playwright-core');
   // 3. Assert initial labels are present
   console.log('Asserting initial labels...');
   const meadowLabel = await getRewardLabel('meadow');
-  if (meadowLabel !== 'Gather: +2 nectar') throw new Error(`Expected 'Gather: +2 nectar' for meadow reward, got '${meadowLabel}'`);
+  if (meadowLabel !== 'Gather: +2 nectar (4+ Blue: +3)') throw new Error(`Expected 'Gather: +2 nectar (4+ Blue: +3)' for meadow reward, got '${meadowLabel}'`);
 
   const bridgeLabel = await getRewardLabel('bridge');
   if (bridgeLabel !== 'Swarm: +1 haul (4+ Red: +2)') throw new Error(`Expected 'Swarm: +1 haul (4+ Red: +2)' for bridge reward, got '${bridgeLabel}'`);
@@ -47,7 +47,7 @@ const { chromium } = require('playwright-core');
   const meadowOwner = await page.$eval('#meadow', el => el.textContent.trim());
   if (meadowOwner !== `${NAME} controls this`) throw new Error(`Expected '${NAME} controls this' for meadow, got '${meadowOwner}'`);
   const meadowLabelAfter = await getRewardLabel('meadow');
-  if (meadowLabelAfter !== 'Gather: +2 nectar') throw new Error(`Meadow reward label lost after gather: '${meadowLabelAfter}'`);
+  if (meadowLabelAfter !== 'Gather: +2 nectar (4+ Blue: +3)') throw new Error(`Meadow reward label lost after gather: '${meadowLabelAfter}'`);
 
   // 5. Make Scout (claims nothing, but increases insight/routes)
   console.log('Performing Scout...');
