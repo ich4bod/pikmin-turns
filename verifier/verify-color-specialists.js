@@ -17,7 +17,7 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net/';
       await page.getByRole('button', { name: orderName }).click();
       await page.waitForResponse(r => r.url().includes('/action') && r.status() === 200);
       const state = await page.evaluate(() => window.game);
-      if (state.players.find(p => p.name === window.commander).units[color] !== 4) throw Error(`${color} units were spent`);
+      if (state.players.find(p => p.name === 'Specialist Tester').units[color] !== 4) throw Error(`${color} units were spent`);
       if (!state.log.some(line => line === dispatch)) throw Error(`missing dispatch: ${dispatch}`);
       await page.close();
     }
