@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { create, join, action, phase, squad, createSolo, chooseBotAction, awardDuskControl } = require('./server');
+const { create, join, action, phase, squad, createSolo, chooseBotAction, awardDuskControl, claimPlace } = require('./server');
 
 test('eight rounds visibly cross all match phases', () => { 
   assert.match(phase(1), /Dawn/); 
@@ -39,6 +39,7 @@ test('scouting claims lookout and later scouts replace its owner', () => {
   assert.equal(game.map.lookout, 'Fern');
   action(game, moss, 'gather');
   action(game, fern, 'gather');
+  game.players[1].units.yellow = 4;
   action(game, moss, 'scout');
   assert.equal(game.map.lookout, 'Moss');
 });
@@ -172,6 +173,38 @@ test('chosen growth shares the nectar error and rejects old recruit', () => {
   }
   const res = createSolo('Grower');
   assert.throws(() => action(res, res.token, 'recruit'), { message: 'Unknown order.' });
+});
+
+test('specialist claim defense keeps weak challenges and logs exact holds', () => {
+  for (const [place, color, minimum, label] of [['meadow', 'blue', 4, 'Nectar Meadow'], ['lookout', 'yellow', 4, 'Lookout Ridge'], ['bridge', 'red', 4, 'Mossy Bridge'], ['relic', null, 8, 'the Sun Relic']]) {
+    const res = create('Fern'); const game = res; const moss = join(game, 'Moss');
+    game.map[place] = 'Fern';
+    const p = game.players[1];
+    if (color) p.units[color] = minimum - 1; else { p.units = { red: 2, blue: 2, yellow: 2 }; }
+    claimPlace(game, p, place, color, minimum);
+    assert.equal(game.map[place], 'Fern');
+    assert.equal(game.log.at(-1), `Fern holds ${label} against Moss.`);
+    if (color) p.units[color] = minimum; else p.units = { red: 3, blue: 3, yellow: 2 };
+    claimPlace(game, p, place, color, minimum);
+    assert.equal(game.map[place], 'Moss');
+  }
+});
+
+test('same owner and unclaimed claims do not add defense logs', () => {
+  const res = create('Fern'); const game = res; const moss = join(game, 'Moss');
+  claimPlace(game, game.players[0], 'meadow', 'blue', 4);
+  assert.equal(game.map.meadow, 'Fern');
+  assert.equal(game.log.length, 2);
+  claimPlace(game, game.players[0], 'meadow', 'blue', 4);
+  assert.equal(game.log.length, 2);
+  assert.equal(moss, game.players[1].token);
+});
+
+test('weak gather still rewards nectar while retaining rival meadow', () => {
+  const res = create('Fern'); const game = res; const fern = res.token; const moss = join(game, 'Moss');
+  action(game, fern, 'gather'); action(game, moss, 'gather');
+  assert.equal(game.players[1].nectar, 3); assert.equal(game.map.meadow, 'Fern');
+  assert.equal(game.log.at(-1), 'Fern holds Nectar Meadow against Moss.');
 });
 
 test('color-specific requirements and errors', () => {

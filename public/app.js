@@ -64,7 +64,7 @@ function draw(){
   phaseNote.textContent=game.status==='playing'?phaseNotes[game.phase]:'';
   phaseNote.style.display=game.status==='playing'?'block':'none';
   $('status').textContent=game.status==='lobby'?'Share the seed. A second commander starts the duel.':game.status==='finished'?game.winner:`Round ${game.round} / 8 · ${game.turnName}'s turn`;
-  $('goal').textContent='First to 12 haul wins. At dusk, every controlled place adds 1 haul; then haul, routes, and squad size break ties.';
+  $('goal').textContent='First to 12 haul wins. Specialists take rival places; at dusk each controlled place adds 1 haul, then routes and squad size break ties.';
   const clock=$('dusk-clock');
   if(game.status==='lobby'){
     clock.innerHTML='<span aria-label="Round 1"></span><span aria-label="Round 2"></span><span aria-label="Round 3"></span><span aria-label="Round 4"></span><span aria-label="Round 5"></span><span aria-label="Round 6"></span><span aria-label="Round 7"></span><span aria-label="Round 8"></span>';

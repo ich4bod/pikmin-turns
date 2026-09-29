@@ -46,7 +46,17 @@ function win(game, reason) {
   save();
 }
 function colorName(c) { return c === 'red' ? 'Red' : c === 'blue' ? 'Blue' : 'Yellow'; }
-function need(p, n, task, color) { 
+function claimPlace(game, p, place, color, minimum) {
+  const owner = game.map[place];
+  if (!owner || owner === p.name) {
+    game.map[place] = p.name;
+    return;
+  }
+  const strongEnough = color ? p.units[color] >= minimum : squad(p) >= minimum;
+  if (strongEnough) game.map[place] = p.name;
+  else game.log.push(`${owner} holds ${place === 'meadow' ? 'Nectar Meadow' : place === 'lookout' ? 'Lookout Ridge' : place === 'bridge' ? 'Mossy Bridge' : 'the Sun Relic'} against ${p.name}.`);
+}
+function need(p, n, task, color) {
   if (color) {
     if (p.units[color] < n) throw Error(`${task} needs ${n} ${colorName(color)} Pikmin; you have ${p.units[color]}.`);
   } else if (squad(p) < n) {
@@ -60,16 +70,16 @@ function resolveAction(game, p, rival, kind) {
     const force = Math.min(5, p.units.blue);
     const gain = force >= 4 ? 3 : 2;
     p.nectar += gain;
-    game.map.meadow = p.name;
     game.log.push(`${p.name} sent ${force} Blue Pikmin to Nectar Meadow (+${gain} nectar).`);
+    claimPlace(game, p, 'meadow', 'blue', 4);
   }
   if (kind === 'scout') { 
     need(p, 1, 'Scouting', 'yellow'); 
     const force = Math.min(5, p.units.yellow);
     const gain = force >= 4 ? 2 : 1;
     p.insight += gain;
-    game.map.lookout = p.name;
     game.log.push(`${p.name} sent ${force} Yellow Pikmin to Lookout Ridge (+${gain} ${gain === 1 ? 'route' : 'routes'}).`);
+    claimPlace(game, p, 'lookout', 'yellow', 4);
   }
   if (kind === 'skirmish') { 
     need(p, 3, 'A bridge fight', 'red'); 
@@ -77,8 +87,8 @@ function resolveAction(game, p, rival, kind) {
     const gain = force >= 4 ? 2 : 1; 
     rival.nectar = Math.max(0, rival.nectar - 1); 
     p.score += gain; 
-    game.map.bridge = p.name; 
-    game.log.push(`${p.name} sent ${force} Red Pikmin across Mossy Bridge (+${gain} haul; ${rival.name} loses 1 nectar).`); 
+    game.log.push(`${p.name} sent ${force} Red Pikmin across Mossy Bridge (+${gain} haul; ${rival.name} loses 1 nectar).`);
+    claimPlace(game, p, 'bridge', 'red', 4);
   }
   if (kind === 'carry') { 
     need(p, 4, 'Carrying the Sun Relic'); 
@@ -86,8 +96,8 @@ function resolveAction(game, p, rival, kind) {
     p.nectar -= 3; 
     p.insight -= 1; 
     p.score += 4; 
-    game.map.relic = p.name; 
-    game.log.push(`${p.name} assigned 4 Pikmin to carry the Sun Relic (+4 haul).`); 
+    game.log.push(`${p.name} assigned 4 Pikmin to carry the Sun Relic (+4 haul).`);
+    claimPlace(game, p, 'relic', null, 8);
   }
   if (kind.startsWith('grow-')) {
     const color = kind.slice(5);
@@ -148,4 +158,4 @@ async function body(req) { let text=''; for await (const part of req) { text += 
 const server = http.createServer(async (req,res) => {
   try { const u = new URL(req.url, `http://${req.headers.host}`); if (u.pathname === '/healthz') return respond(res,200,{ok:true}); if (req.method === 'POST' && u.pathname === '/api/lobbies') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=create(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x),token:x.token}); } if (req.method === 'POST' && u.pathname === '/api/solo') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=createSolo(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x),token:x.token}); } const match=u.pathname.match(/^\/api\/lobbies\/([A-Z0-9]+)(?:\/action)?$/); if (match) { const game=games[match[1]]; if (!game) return respond(res,404,{error:'Lobby not found.'}); if (req.method === 'GET') return respond(res,200,clean(game)); const b=await body(req); if (u.pathname.endsWith('/action')) { action(game,b.token,b.action); return respond(res,200,clean(game)); } const token=join(game,b.name?.trim().slice(0,24)); return respond(res,200,{...clean(game),token}); } const file = u.pathname === '/' ? 'index.html' : u.pathname.split('?')[0].slice(1); const target=path.resolve(PUBLIC,file); if (!target.startsWith(PUBLIC) || !fs.existsSync(target)) return respond(res,404,'Not found','text/plain'); return respond(res,200,fs.readFileSync(target), target.endsWith('.js')?'text/javascript':'text/html'); } catch (err) { return respond(res,400,{error:err.message}); } });
 if (require.main === module) server.listen(PORT);
-module.exports={create,join,action,phase,squad,server,createSolo,chooseBotAction,win,awardDuskControl};
+module.exports={create,join,action,phase,squad,server,createSolo,chooseBotAction,win,awardDuskControl,claimPlace};
