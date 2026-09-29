@@ -27,6 +27,30 @@ const browserErrors = [];
       return page.evaluate(ids => ids.map(id => document.querySelector(`#claim-${id}`).textContent), claimIds);
     }
     async function assertClaims(page, expected) { assert.deepEqual(await claims(page), expected); }
+    async function takeable(page, id) {
+      return page.evaluate(place => ({
+        active: document.querySelector(`#place-${place}`).classList.contains('takeable'),
+        text: document.querySelector(`#takeable-${place}`).textContent
+      }), id);
+    }
+    async function assertTakeable(page, id, active, text = '') {
+      assert.deepEqual(await takeable(page, id), { active, text });
+    }
+    async function assertTakeableClear(page) {
+      for (const id of claimIds) await assertTakeable(page, id, false);
+    }
+    async function setDisplayState(page, place, owner, units, squad) {
+      await page.evaluate(({ place, owner, units, squad }) => {
+        const next = JSON.parse(JSON.stringify(window.game));
+        next.status = 'playing';
+        next.map[place] = owner;
+        const local = next.players.find(player => player && player.name === window.commander);
+        local.units = units;
+        local.squad = squad;
+        window.game = next;
+        draw();
+      }, { place, owner, units, squad });
+    }
     async function action(page, name) {
       await Promise.all([
         page.waitForResponse(response => response.url().includes('/action') && response.status() === 200),
@@ -39,6 +63,7 @@ const browserErrors = [];
     }
 
     await fern.goto(url);
+    await assertTakeableClear(fern);
     await fern.fill('#name', 'Fern');
     await Promise.all([
       fern.waitForResponse(response => response.url().endsWith('/api/lobbies') && response.status() === 201),
@@ -54,6 +79,7 @@ const browserErrors = [];
     ]);
     await waitPlaying(fern); await waitPlaying(moss);
     await assertClaims(fern, expectedUnclaimed); await assertClaims(moss, expectedUnclaimed);
+    await assertTakeableClear(fern); await assertTakeableClear(moss);
     await assertNoOverflow(fern); await assertNoOverflow(moss);
 
     await action(fern, 'gather');
@@ -110,6 +136,24 @@ const browserErrors = [];
       assert.deepEqual(branch.ready, { state: 'ready', text: `Ready to take ${place[0]} from Moss.` });
     }
 
+    const displayCases = [
+      ['meadow', { red: 2, blue: 4, yellow: 2 }, 8, 'Ready to take from Moss.'],
+      ['lookout', { red: 2, blue: 2, yellow: 4 }, 8, 'Ready to take from Moss.'],
+      ['bridge', { red: 4, blue: 2, yellow: 2 }, 8, 'Ready to take from Moss.'],
+      ['relic', { red: 3, blue: 3, yellow: 2 }, 8, 'Ready to take from Moss.']
+    ];
+    for (const [id, units, squad, text] of displayCases) {
+      await setDisplayState(fern, id, 'Moss', units, squad);
+      await assertTakeable(fern, id, true, text);
+      await setDisplayState(fern, id, 'Fern', units, squad);
+      await assertTakeable(fern, id, false);
+      const weak = { ...units };
+      if (id === 'relic') { weak.red = 2; weak.blue = 2; weak.yellow = 2; }
+      else weak[id === 'meadow' ? 'blue' : id === 'lookout' ? 'yellow' : 'red'] = 3;
+      await setDisplayState(fern, id, 'Moss', weak, 6);
+      await assertTakeable(fern, id, false);
+    }
+
     const finished = await browser.newPage({ viewport: { width: 390, height: 844 } });
     pages.push(finished);
     finished.on('pageerror', error => browserErrors.push(`${finished.url()} pageerror: ${error.message}`));
@@ -129,6 +173,7 @@ const browserErrors = [];
     }
     await finished.waitForFunction(() => window.game?.status === 'finished');
     await assertClaims(finished, ['', '', '', '']);
+    await assertTakeableClear(finished);
     await assertNoOverflow(finished);
     assert.deepEqual(browserErrors, []);
     console.log('live claim stakes verified for all four defended garden places');
