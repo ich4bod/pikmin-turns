@@ -307,3 +307,76 @@ test('color-specific requirements and errors', () => {
     assert.equal(e.message, 'Nectar gathering needs 2 Blue Pikmin; you have 1.');
   }
 });
+
+test('all four garden places can be fortified for one nectar and one turn', () => {
+  const places = [
+    ['meadow', 'fortify-meadow', 'Nectar Meadow'],
+    ['lookout', 'fortify-lookout', 'Lookout Ridge'],
+    ['bridge', 'fortify-bridge', 'Mossy Bridge'],
+    ['relic', 'fortify-relic', 'the Sun Relic']
+  ];
+  for (const [place, order, label] of places) {
+    const res = create('Fern'); const game = res; const token = res.token; join(game, 'Moss');
+    game.map[place] = 'Fern';
+    action(game, token, order);
+    assert.equal(game.fortified[place], 'Fern');
+    assert.equal(game.players[0].nectar, 0);
+    assert.equal(game.turn, 1);
+    assert.equal(game.log.at(-1), `Fern fortified ${label} with 1 nectar.`);
+  }
+});
+
+test('fortify validation is exact and atomic', () => {
+  const cases = [
+    ['meadow', 'fortify-meadow', 'You must control Nectar Meadow to fortify it.', game => { game.map.meadow = 'Moss'; }],
+    ['lookout', 'fortify-lookout', 'You must control Lookout Ridge to fortify it.', game => {}],
+    ['bridge', 'fortify-bridge', 'Fortifying needs 1 nectar.', game => { game.map.bridge = 'Fern'; game.players[0].nectar = 0; }],
+    ['relic', 'fortify-relic', 'the Sun Relic is already fortified.', game => { game.map.relic = 'Fern'; game.fortified.relic = 'Fern'; }]
+  ];
+  for (const [place, order, message, setup] of cases) {
+    const res = create('Fern'); const game = res; const token = res.token; join(game, 'Moss');
+    setup(game);
+    const before = JSON.stringify({ players: game.players, map: game.map, fortified: game.fortified, log: game.log, turn: game.turn, round: game.round });
+    assert.throws(() => action(game, token, order), { message });
+    assert.equal(JSON.stringify({ players: game.players, map: game.map, fortified: game.fortified, log: game.log, turn: game.turn, round: game.round }), before);
+  }
+});
+
+test('strong challenge spends a fortification, weak challenge does not, and the next strong challenge takes over', () => {
+  const res = create('Fern'); const game = res; join(game, 'Moss');
+  game.map.bridge = 'Fern'; game.fortified.bridge = 'Fern';
+  const moss = game.players[1];
+  moss.units.red = 3;
+  claimPlace(game, moss, 'bridge', 'red', 4);
+  assert.equal(game.map.bridge, 'Fern');
+  assert.equal(game.fortified.bridge, 'Fern');
+  assert.equal(game.log.at(-1), 'Fern holds Mossy Bridge against Moss.');
+  moss.units.red = 4;
+  claimPlace(game, moss, 'bridge', 'red', 4);
+  assert.equal(game.map.bridge, 'Fern');
+  assert.equal(game.fortified.bridge, null);
+  assert.equal(game.log.at(-1), "Fern's fortification held Mossy Bridge against Moss.");
+  claimPlace(game, moss, 'bridge', 'red', 4);
+  assert.equal(game.map.bridge, 'Moss');
+  assert.equal(game.fortified.bridge, null);
+});
+
+test('growing onto a different meadow owner clears stale fortification', () => {
+  const res = create('Fern'); const game = res; const token = res.token; join(game, 'Moss');
+  game.map.meadow = 'Moss'; game.fortified.meadow = 'Moss'; game.players[0].nectar = 2;
+  action(game, token, 'grow-red');
+  assert.equal(game.map.meadow, 'Fern');
+  assert.equal(game.fortified.meadow, null);
+});
+
+test('old and malformed fortification state normalizes to current owners or null', () => {
+  const res = create('Fern'); const game = res; join(game, 'Moss');
+  game.map = { meadow: 'Fern', lookout: 'Moss', bridge: null, relic: 'Fern' };
+  game.fortified = { meadow: 'Fern', lookout: 'Fern', relic: 42 };
+  assert.throws(() => action(game, res.token, 'fortify-meadow'), { message: 'Nectar Meadow is already fortified.' });
+  assert.deepEqual(game.fortified, { meadow: 'Fern', lookout: null, bridge: null, relic: null });
+  delete game.fortified;
+  game.players[0].nectar = 0;
+  assert.throws(() => action(game, res.token, 'fortify-meadow'), { message: 'Fortifying needs 1 nectar.' });
+  assert.deepEqual(game.fortified, { meadow: null, lookout: null, bridge: null, relic: null });
+});

@@ -6,13 +6,22 @@ const crypto = require('node:crypto');
 const PORT = process.env.PORT || 3000;
 const DATA = process.env.DATA_FILE || path.join(__dirname, 'data', 'games.json');
 const PUBLIC = path.join(__dirname, 'public');
+const places = ['meadow', 'lookout', 'bridge', 'relic'];
+const placeLabels = { meadow: 'Nectar Meadow', lookout: 'Lookout Ridge', bridge: 'Mossy Bridge', relic: 'the Sun Relic' };
 let games = {};
-try { games = JSON.parse(fs.readFileSync(DATA, 'utf8')); } catch { fs.mkdirSync(path.dirname(DATA), { recursive: true }); }
+try { games = JSON.parse(fs.readFileSync(DATA, 'utf8')); Object.values(games).forEach(normalizeGame); } catch { fs.mkdirSync(path.dirname(DATA), { recursive: true }); }
 function save() { fs.writeFileSync(DATA, JSON.stringify(games, null, 2)); }
 function code() { let c; do { c = crypto.randomBytes(3).toString('hex').toUpperCase(); } while (games[c]); return c; }
 function phase(round) { return round <= 2 ? 'Dawn — grow your squad' : round <= 5 ? 'Afternoon — divide the crew' : 'Dusk — haul the treasure home'; }
+function normalizeFortification(game) {
+  const source = game.fortified && typeof game.fortified === 'object' && !Array.isArray(game.fortified) ? game.fortified : {};
+  game.fortified = Object.fromEntries(places.map(place => [place, source[place] && source[place] === game.map[place] ? source[place] : null]));
+  return game.fortified;
+}
+function normalizeGame(game) { if (!game.map) game.map = {}; normalizeFortification(game); return game; }
 function squad(p) { return p.units.red + p.units.blue + p.units.yellow; }
 function clean(game) {
+  normalizeGame(game);
   if (!game.map.lookout) game.map.lookout = null;
   let rivalPlan = null;
   if (game.mode === 'solo' && game.status === 'playing') {
@@ -20,11 +29,11 @@ function clean(game) {
     const nextKind = chooseBotAction(game, sprout);
     rivalPlan = botPlan(nextKind);
   }
-  return { code: game.code, phase: phase(game.round), round: game.round, status: game.status, mode: game.mode, players: game.players.map(({ token, ...p }) => ({ ...p, squad: squad(p) })), turn: game.turn, turnName: game.players[game.turn]?.name, log: game.log.slice(-10), winner: game.winner, map: game.map, target: 12, rivalPlan };
+  return { code: game.code, phase: phase(game.round), round: game.round, status: game.status, mode: game.mode, players: game.players.map(({ token, ...p }) => ({ ...p, squad: squad(p) })), turn: game.turn, turnName: game.players[game.turn]?.name, log: game.log.slice(-10), winner: game.winner, map: game.map, fortified: { ...game.fortified }, target: 12, rivalPlan };
 }
 function player(name, token) { const p = { name, token, score: 0, duskBonus: 0, nectar: 1, insight: 0, units: { red: 2, blue: 2, yellow: 2 } }; return p; }
-function create(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'lobby', round:1, turn:0, players:[player(name, token)], map:{ meadow: null, bridge: null, lookout: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden.`] }; save(); return { ...games[c], token }; }
-function createSolo(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); const botToken = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'playing', mode:'solo', round:1, turn:0, players:[player(name, token), player('Sprout', botToken)], map:{ meadow: null, bridge: null, lookout: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden. Sprout is also here.`] }; save(); return { ...games[c], token }; }
+function create(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'lobby', round:1, turn:0, players:[player(name, token)], map:{ meadow: null, bridge: null, lookout: null, relic: null }, fortified:{ meadow: null, lookout: null, bridge: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden.`] }; save(); return { ...games[c], token }; }
+function createSolo(name) { const c = code(); const token = crypto.randomBytes(16).toString('hex'); const botToken = crypto.randomBytes(16).toString('hex'); games[c] = { code:c, status:'playing', mode:'solo', round:1, turn:0, players:[player(name, token), player('Sprout', botToken)], map:{ meadow: null, bridge: null, lookout: null, relic: null }, fortified:{ meadow: null, lookout: null, bridge: null, relic: null }, log:[`${name} landed with a six-Pikmin squad at Sunspill Garden. Sprout is also here.`] }; save(); return { ...games[c], token }; }
 function join(game, name) { if (game.status !== 'lobby' || game.players.length > 1) throw Error('This lobby is no longer available.'); const token = crypto.randomBytes(16).toString('hex'); game.players.push(player(name, token)); game.status='playing'; game.log.push(`${name} arrived. ${game.players[0].name} gives the first order.`); save(); return token; }
 function awardDuskControl(game) {
   if (game.duskAwarded) return;
@@ -46,14 +55,25 @@ function win(game, reason) {
 }
 function colorName(c) { return c === 'red' ? 'Red' : c === 'blue' ? 'Blue' : 'Yellow'; }
 function claimPlace(game, p, place, color, minimum) {
+  normalizeFortification(game);
   const owner = game.map[place];
   if (!owner || owner === p.name) {
     game.map[place] = p.name;
+    if (owner !== p.name) game.fortified[place] = null;
     return;
   }
   const strongEnough = color ? p.units[color] >= minimum : squad(p) >= minimum;
-  if (strongEnough) game.map[place] = p.name;
-  else game.log.push(`${owner} holds ${place === 'meadow' ? 'Nectar Meadow' : place === 'lookout' ? 'Lookout Ridge' : place === 'bridge' ? 'Mossy Bridge' : 'the Sun Relic'} against ${p.name}.`);
+  if (!strongEnough) {
+    game.log.push(`${owner} holds ${placeLabels[place]} against ${p.name}.`);
+    return;
+  }
+  if (game.fortified[place] === owner) {
+    game.fortified[place] = null;
+    game.log.push(`${owner}'s fortification held ${placeLabels[place]} against ${p.name}.`);
+    return;
+  }
+  game.map[place] = p.name;
+  game.fortified[place] = null;
 }
 function need(p, n, task, color) {
   if (color) {
@@ -64,7 +84,18 @@ function need(p, n, task, color) {
 }
 function resolveAction(game, p, rival, kind) {
   const reassign = typeof kind === 'string' ? kind.match(/^reassign-(red|blue|yellow)-(red|blue|yellow)$/) : null;
-  if (!['gather','scout','skirmish','carry','grow-red','grow-blue','grow-yellow'].includes(kind) && !reassign) throw Error('Unknown order.');
+  const fortify = typeof kind === 'string' ? kind.match(/^fortify-(meadow|lookout|bridge|relic)$/) : null;
+  if (!['gather','scout','skirmish','carry','grow-red','grow-blue','grow-yellow'].includes(kind) && !reassign && !fortify) throw Error('Unknown order.');
+  if (fortify) {
+    const place = fortify[1];
+    if (game.map[place] !== p.name) throw Error(`You must control ${placeLabels[place]} to fortify it.`);
+    if (p.nectar < 1) throw Error('Fortifying needs 1 nectar.');
+    normalizeFortification(game);
+    if (game.fortified[place]) throw Error(`${placeLabels[place]} is already fortified.`);
+    p.nectar -= 1;
+    game.fortified[place] = p.name;
+    game.log.push(`${p.name} fortified ${placeLabels[place]} with 1 nectar.`);
+  }
   if (kind === 'gather') { 
     need(p, 2, 'Nectar gathering', 'blue'); 
     const force = Math.min(5, p.units.blue);
@@ -104,6 +135,7 @@ function resolveAction(game, p, rival, kind) {
     if (p.nectar < 2) throw Error('Growing Pikmin needs 2 nectar.');
     p.nectar -= 2;
     p.units[color] += 2;
+    if (game.map.meadow !== p.name) game.fortified.meadow = null;
     game.map.meadow = p.name;
     game.log.push(`${p.name} returned nectar to the Onion and grew 2 ${colorName(color)} Pikmin (squad ${squad(p)}).`);
   }
@@ -144,6 +176,7 @@ function chooseBotAction(game, p) {
 }
 
 function action(game, token, kind) {
+  normalizeGame(game);
   if (game.status !== 'playing') {
     throw Error('The match has not started.');
   }
