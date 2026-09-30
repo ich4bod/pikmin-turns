@@ -18,8 +18,7 @@ function clean(game) {
   if (game.mode === 'solo' && game.status === 'playing') {
     const sprout = game.players.find(p => p.name === 'Sprout');
     const nextKind = chooseBotAction(game, sprout);
-    const labels = { scout: 'Map a route', gather: 'Gather nectar', carry: 'Carry the Sun Relic', skirmish: 'Swarm Mossy Bridge' };
-    rivalPlan = labels[nextKind];
+    rivalPlan = botPlan(nextKind);
   }
   return { code: game.code, phase: phase(game.round), round: game.round, status: game.status, mode: game.mode, players: game.players.map(({ token, ...p }) => ({ ...p, squad: squad(p) })), turn: game.turn, turnName: game.players[game.turn]?.name, log: game.log.slice(-10), winner: game.winner, map: game.map, target: 12, rivalPlan };
 }
@@ -117,12 +116,31 @@ function resolveAction(game, p, rival, kind) {
     game.log.push(`${p.name} reassigned 2 ${colorName(source)} Pikmin as ${colorName(destination)}.`);
   }
 }
+function reassignCandidate(p) {
+  const targets = [['yellow', 'Scout'], ['blue', 'Gather'], ['red', 'Swarm']];
+  const colors = ['red', 'blue', 'yellow'];
+  for (const [destination, job] of targets) {
+    if (p.units[destination] < 2 || p.units[destination] > 3) continue;
+    const donor = colors
+      .filter(color => color !== destination && p.units[color] >= 2)
+      .sort((a, b) => p.units[b] - p.units[a] || colors.indexOf(a) - colors.indexOf(b))[0];
+    if (donor) return { source: donor, destination, job, action: `reassign-${donor}-${destination}` };
+  }
+  return null;
+}
+function botPlan(kind) {
+  const labels = { scout: 'Map a route', gather: 'Gather nectar', carry: 'Carry the Sun Relic', skirmish: 'Swarm Mossy Bridge' };
+  if (labels[kind]) return labels[kind];
+  const match = kind.match(/^reassign-(red|blue|yellow)-(red|blue|yellow)$/);
+  if (!match) return '';
+  const jobs = { yellow: 'Scout', blue: 'Gather', red: 'Swarm' };
+  return `reassigning 2 ${colorName(match[1])} as ${colorName(match[2])} to ready ${jobs[match[2]]}`;
+}
 function chooseBotAction(game, p) {
   if (squad(p) >= 4 && p.nectar >= 3 && p.insight >= 1) return 'carry';
-  if (p.insight === 0) return 'scout';
-  if (p.nectar < 3) return 'gather';
-  if (p.units.red >= 3) return 'skirmish';
-  return 'gather';
+  if (p.insight === 0 && p.units.yellow >= 1) return 'scout';
+  if (p.nectar < 3 && p.units.blue >= 2) return 'gather';
+  return reassignCandidate(p)?.action || (p.units.red >= 3 ? 'skirmish' : 'gather');
 }
 
 function action(game, token, kind) {
@@ -167,4 +185,4 @@ async function body(req) { let text=''; for await (const part of req) { text += 
 const server = http.createServer(async (req,res) => {
   try { const u = new URL(req.url, `http://${req.headers.host}`); if (u.pathname === '/healthz') return respond(res,200,{ok:true}); if (req.method === 'POST' && u.pathname === '/api/lobbies') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=create(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x),token:x.token}); } if (req.method === 'POST' && u.pathname === '/api/solo') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=createSolo(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x),token:x.token}); } const match=u.pathname.match(/^\/api\/lobbies\/([A-Z0-9]+)(?:\/action)?$/); if (match) { const game=games[match[1]]; if (!game) return respond(res,404,{error:'Lobby not found.'}); if (req.method === 'GET') return respond(res,200,clean(game)); const b=await body(req); if (u.pathname.endsWith('/action')) { action(game,b.token,b.action); return respond(res,200,clean(game)); } const token=join(game,b.name?.trim().slice(0,24)); return respond(res,200,{...clean(game),token}); } const file = u.pathname === '/' ? 'index.html' : u.pathname.split('?')[0].slice(1); const target=path.resolve(PUBLIC,file); if (!target.startsWith(PUBLIC) || !fs.existsSync(target)) return respond(res,404,'Not found','text/plain'); return respond(res,200,fs.readFileSync(target), target.endsWith('.js')?'text/javascript':'text/html'); } catch (err) { return respond(res,400,{error:err.message}); } });
 if (require.main === module) server.listen(PORT);
-module.exports={create,join,action,phase,squad,server,createSolo,chooseBotAction,win,awardDuskControl,claimPlace};
+module.exports={create,join,action,phase,squad,server,createSolo,chooseBotAction,reassignCandidate,botPlan,win,awardDuskControl,claimPlace};

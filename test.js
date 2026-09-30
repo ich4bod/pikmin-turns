@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { create, join, action, phase, squad, createSolo, chooseBotAction, awardDuskControl, claimPlace } = require('./server');
+const { create, join, action, phase, squad, createSolo, chooseBotAction, reassignCandidate, botPlan, awardDuskControl, claimPlace } = require('./server');
 
 test('eight rounds visibly cross all match phases', () => { 
   assert.match(phase(1), /Dawn/); 
@@ -115,6 +115,40 @@ test('Sprout priority branches', () => {
   testPriority(3, 1, 3, 'skirmish');
   // 5. gather: otherwise
   testPriority(3, 1, 2, 'gather');
+});
+
+test('Sprout reassign candidate follows target order and exact public plan', () => {
+  const p = { units: { red: 6, blue: 2, yellow: 0 } };
+  assert.deepEqual(reassignCandidate(p), { source: 'red', destination: 'blue', job: 'Gather', action: 'reassign-red-blue' });
+  assert.equal(chooseBotAction({ }, { ...p, nectar: 3, insight: 0 }), 'reassign-red-blue');
+  assert.equal(botPlan('reassign-red-blue'), 'reassigning 2 Red as Blue to ready Gather');
+});
+
+test('Sprout reassign donor ties use red then blue then yellow', () => {
+  assert.equal(reassignCandidate({ units: { red: 2, blue: 2, yellow: 2 } }).source, 'red');
+  assert.equal(reassignCandidate({ units: { red: 2, blue: 2, yellow: 4 } }).source, 'yellow');
+  assert.equal(reassignCandidate({ units: { red: 4, blue: 2, yellow: 2 } }).source, 'red');
+});
+
+test('Sprout keeps a legal Scout and returns no impossible reassignment', () => {
+  const scout = { units: { red: 2, blue: 2, yellow: 4 }, nectar: 3, insight: 0 };
+  assert.equal(chooseBotAction({}, scout), 'scout');
+  assert.equal(reassignCandidate({ units: { red: 1, blue: 1, yellow: 1 } }), null);
+  assert.equal(reassignCandidate({ units: { red: 4, blue: 4, yellow: 4 } }), null);
+});
+
+test('Sprout executes reassignment through the normal action path', () => {
+  const res = createSolo('Reassign Human');
+  const game = res;
+  const sprout = game.players[1];
+  sprout.units = { red: 6, blue: 2, yellow: 0 };
+  sprout.nectar = 3;
+  sprout.insight = 0;
+  action(game, res.token, 'gather');
+  assert.deepEqual(sprout.units, { red: 4, blue: 4, yellow: 0 });
+  assert.equal(game.log.at(-1), 'Sprout reassigned 2 Red Pikmin as Blue.');
+  assert.equal(game.turn, 0);
+  assert.equal(game.round, 2);
 });
 
 test('Sprout eight-order sequence', () => {
