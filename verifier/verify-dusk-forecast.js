@@ -83,7 +83,7 @@ if (!url) {
     await waitForTurn(guest, guestName);
     await action(guest, 'grow-yellow');
     await host.waitForFunction(() => window.game?.map.meadow === 'Moss & <i>Oak</i>' && window.game?.players[0]?.score === 2);
-    const takeover = forecast(hostName, 2, 1, guestName, 0, 1);
+    const takeover = forecast(hostName, 2, 1, guestName, 0, 2);
     if (await host.locator('#dusk-forecast').textContent() !== takeover) throw new Error('takeover or updated-haul forecast mismatch');
 
     // Finish all eight rounds with legal non-scoring orders.
