@@ -27,7 +27,10 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net/';
       await page.getByRole('button', { name: 'Play solo' }).click();
       await page.waitForResponse(r => r.url().includes('/api/solo') && r.status() === 201);
       await assertProgress(page, { red:'2/4 Red for stronger Swarm.', blue:'2/4 Blue for stronger Gather.', yellow:'2/4 Yellow for stronger Scout.' });
-      await assertSummaries(page, [{ text:'No specialist crew yet.', className:'specialist-summary local' },]);
+      await assertSummaries(page, [
+        { text:'No specialist crew yet.', className:'specialist-summary local' },
+        { text:'No specialist crew yet.', className:'specialist-summary rival' },
+      ]);
       await page.locator('button[onclick="act(\'gather\')"]').click();
       await page.waitForResponse(r => r.url().includes('/action') && r.status() === 200);
       await page.locator('#grow-' + color).click();
@@ -35,6 +38,10 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net/';
       const p = await page.evaluate(() => window.game.players.find(p => p.name === window.commander));
       if (p.units[color] !== 4) throw Error(`${color} did not grow to 4`);
       await assertProgress(page, { red:color==='red'?'Red specialist ready.':'2/4 Red for stronger Swarm.', blue:color==='blue'?'Blue specialist ready.':'2/4 Blue for stronger Gather.', yellow:color==='yellow'?'Yellow specialist ready.':'2/4 Yellow for stronger Scout.' }, [color]);
+      await assertSummaries(page, [
+        { text:`${color === 'red' ? 'Red' : color === 'blue' ? 'Blue' : 'Yellow'} can strengthen ${color === 'red' ? 'Swarm' : color === 'blue' ? 'Gather' : 'Scout'}.`, className:'specialist-summary local' },
+        { text:'No specialist crew yet.', className:'specialist-summary rival' },
+      ]);
       await page.locator('button[onclick="act(\'gather\')"]').click();
       await page.waitForResponse(r => r.url().includes('/action') && r.status() === 200);
       await page.locator('#grow-' + color).click();
@@ -42,6 +49,10 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net/';
       const grown = await page.evaluate(() => window.game.players.find(p => p.name === window.commander));
       if (grown.units[color] !== 6) throw Error(`${color} did not grow to 6`);
       await assertProgress(page, { red:color==='red'?'Red specialist ready.':'2/4 Red for stronger Swarm.', blue:color==='blue'?'Blue specialist ready.':'2/4 Blue for stronger Gather.', yellow:color==='yellow'?'Yellow specialist ready.':'2/4 Yellow for stronger Scout.' }, [color]);
+      await assertSummaries(page, [
+        { text:`${color === 'red' ? 'Red' : color === 'blue' ? 'Blue' : 'Yellow'} can strengthen ${color === 'red' ? 'Swarm' : color === 'blue' ? 'Gather' : 'Scout'}.`, className:'specialist-summary local' },
+        { text:'No specialist crew yet.', className:'specialist-summary rival' },
+      ]);
       const orderAction = { Gather:'gather', Scout:'scout', 'Swarm bridge':'skirmish' }[orderName];
       await page.locator('button[onclick="act(\'' + orderAction + '\')"]').click();
       await page.waitForResponse(r => r.url().includes('/action') && r.status() === 200);
