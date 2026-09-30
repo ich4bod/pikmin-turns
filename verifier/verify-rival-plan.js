@@ -55,7 +55,13 @@ if (!url) throw new Error('URL required');
     const fortified = createSolo('Fortify Human');
     const fortifiedSprout = fortified.players[1];
     const fortifiedHuman = fortified.players[0];
-    fortified.round = 6;
+    for (let i = 0; i < 5; i++) {
+      const response = await fetch(`http://127.0.0.1:${port}/api/lobbies/${fortified.code}/action`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: fortified.token, action: 'gather' })
+      });
+      if (!response.ok) throw Error(`could not prepare round 6: ${response.status}`);
+    }
     fortified.map.meadow = 'Sprout';
     fortifiedSprout.nectar = 1;
     fortifiedHuman.units.blue = 4;
