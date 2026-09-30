@@ -64,14 +64,14 @@ if (!url) throw new Error('URL required');
     }
     fortified.map.meadow = 'Sprout';
     fortifiedSprout.nectar = 1;
-    fortifiedHuman.units.blue = 4;
+    fortifiedHuman.units = { red: 1, blue: 4, yellow: 1 }; 
     await localPage.evaluate(state => sessionStorage.setItem('pikmin', JSON.stringify(state)), { code: fortified.code, token: fortified.token, commander: 'Fortify Human' });
     await localPage.reload({ waitUntil: 'networkidle' });
     await localPage.locator('#rival-plan').waitFor({ state: 'visible' });
     if ((await localPage.locator('#rival-plan').textContent()).trim() !== 'Sprout is planning: fortifying Nectar Meadow against one takeover.') throw Error('prepared meadow fortification plan was not public');
     await Promise.all([
       localPage.waitForResponse(response => response.url().includes('/action') && response.status() === 200),
-      localPage.locator('button[onclick="act(\'reassign-red-blue\')"]').click()
+      localPage.locator('button[onclick="act(\'scout\')"]').click()
     ]);
     const fortifiedState = await localPage.evaluate(() => ({
       shield: window.game.fortified.meadow,
