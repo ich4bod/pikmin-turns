@@ -13,6 +13,18 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net/';
         const rules = document.querySelector('.rules').getBoundingClientRect();
         const controlRule = document.querySelector('#control-rule').getBoundingClientRect();
         if (Math.abs(controlRule.width - rules.width) > 2) throw Error('control rule width does not match rule grid');
+        const ruleCards = [...document.querySelectorAll('.rules > .rule')];
+        if (ruleCards.length !== 3) throw Error('expected three rule cards');
+        let previous;
+        for (const card of ruleCards) {
+          const rect = card.getBoundingClientRect();
+          if (Math.abs(rect.width - rules.width) > 2) throw Error('rule card width does not match rule grid');
+          if (previous && (rect.top < previous.top || rect.top < previous.bottom)) throw Error('rule cards are out of order or overlap');
+          const style = getComputedStyle(card);
+          const textWidth = rect.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth);
+          if (textWidth < 250) throw Error('rule text line is narrower than 250px');
+          previous = rect;
+        }
         const controls = ['#name', 'button[onclick="host()"]', '#solo-btn', '#code', 'button[onclick="join()"]'].map(selector => document.querySelector(selector));
         for (const control of controls) {
           const rect = control.getBoundingClientRect();
