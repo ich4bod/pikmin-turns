@@ -51,6 +51,30 @@ if (!url) throw new Error('URL required');
     if (!state.log.includes('Sprout reassigned 2 Red Pikmin as Blue.')) throw Error('reassignment was not executed through the action log');
     if (state.sprout.units.red !== 4 || state.sprout.units.blue !== 4 || state.sprout.units.yellow !== 0) throw Error('prepared reassignment changed the wrong crew');
     if (state.turnName !== 'Prepared Human' || state.round !== 2) throw Error('reassignment did not advance the normal turn');
+
+    const fortified = createSolo('Fortify Human');
+    const fortifiedSprout = fortified.players[1];
+    const fortifiedHuman = fortified.players[0];
+    fortified.round = 6;
+    fortified.map.meadow = 'Sprout';
+    fortifiedSprout.nectar = 1;
+    fortifiedHuman.units.blue = 4;
+    await localPage.evaluate(state => sessionStorage.setItem('pikmin', JSON.stringify(state)), { code: fortified.code, token: fortified.token, commander: 'Fortify Human' });
+    await localPage.reload({ waitUntil: 'networkidle' });
+    await localPage.locator('#rival-plan').waitFor({ state: 'visible' });
+    if ((await localPage.locator('#rival-plan').textContent()).trim() !== 'Sprout is planning: fortifying Nectar Meadow against one takeover.') throw Error('prepared meadow fortification plan was not public');
+    await Promise.all([
+      localPage.waitForResponse(response => response.url().includes('/action') && response.status() === 200),
+      localPage.locator('button[onclick="act(\'reassign-red-blue\')"]').click()
+    ]);
+    const fortifiedState = await localPage.evaluate(() => ({
+      shield: window.game.fortified.meadow,
+      log: [...document.querySelectorAll('.logline')].map(line => line.textContent),
+      plan: document.querySelector('#rival-plan').textContent.trim()
+    }));
+    if (fortifiedState.shield !== 'Sprout') throw Error('meadow fortification shield was not public after execution');
+    if (!fortifiedState.log.includes('Sprout fortified Nectar Meadow with 1 nectar.')) throw Error('fortification was not executed through the action log');
+    if (fortifiedState.plan !== 'Sprout is planning: Gather nectar.') throw Error('post-fortification plan was not public');
     await browser.close();
     console.log('Sprout plan is public before every solo response');
   } finally {

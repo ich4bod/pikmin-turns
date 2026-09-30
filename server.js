@@ -160,8 +160,28 @@ function reassignCandidate(p) {
   }
   return null;
 }
+function fortifyCandidate(game, p, rival) {
+  if (game.round < 6 || p.nectar < 1) return null;
+  const threats = [
+    ['relic', squad(rival) >= 8],
+    ['bridge', rival.units.red >= 4],
+    ['meadow', rival.units.blue >= 4],
+    ['lookout', rival.units.yellow >= 4]
+  ];
+  const place = threats.find(([candidate, threatened]) => threatened && game.map[candidate] === p.name && game.fortified[candidate] !== p.name)?.[0];
+  return place ? `fortify-${place}` : null;
+}
 function botPlan(kind) {
-  const labels = { scout: 'Map a route', gather: 'Gather nectar', carry: 'Carry the Sun Relic', skirmish: 'Swarm Mossy Bridge' };
+  const labels = {
+    scout: 'Map a route',
+    gather: 'Gather nectar',
+    carry: 'Carry the Sun Relic',
+    skirmish: 'Swarm Mossy Bridge',
+    'fortify-relic': 'fortifying the Sun Relic against one takeover',
+    'fortify-bridge': 'fortifying Mossy Bridge against one takeover',
+    'fortify-meadow': 'fortifying Nectar Meadow against one takeover',
+    'fortify-lookout': 'fortifying Lookout Ridge against one takeover'
+  };
   if (labels[kind]) return labels[kind];
   const match = kind.match(/^reassign-(red|blue|yellow)-(red|blue|yellow)$/);
   if (!match) return '';
@@ -169,7 +189,10 @@ function botPlan(kind) {
   return `reassigning 2 ${colorName(match[1])} as ${colorName(match[2])} to ready ${jobs[match[2]]}`;
 }
 function chooseBotAction(game, p) {
+  const rival = game.players?.find(player => player !== p);
   if (squad(p) >= 4 && p.nectar >= 3 && p.insight >= 1) return 'carry';
+  const fortify = rival && fortifyCandidate(game, p, rival);
+  if (fortify) return fortify;
   if (p.insight === 0 && p.units.yellow >= 1) return 'scout';
   if (p.nectar < 3 && p.units.blue >= 2) return 'gather';
   return reassignCandidate(p)?.action || (p.units.red >= 3 ? 'skirmish' : 'gather');
@@ -218,4 +241,4 @@ async function body(req) { let text=''; for await (const part of req) { text += 
 const server = http.createServer(async (req,res) => {
   try { const u = new URL(req.url, `http://${req.headers.host}`); if (u.pathname === '/healthz') return respond(res,200,{ok:true}); if (req.method === 'POST' && u.pathname === '/api/lobbies') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=create(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x),token:x.token}); } if (req.method === 'POST' && u.pathname === '/api/solo') { const b=await body(req); if (!b.name?.trim()) throw Error('Choose a commander name.'); const x=createSolo(b.name.trim().slice(0,24)); return respond(res,201,{...clean(x),token:x.token}); } const match=u.pathname.match(/^\/api\/lobbies\/([A-Z0-9]+)(?:\/action)?$/); if (match) { const game=games[match[1]]; if (!game) return respond(res,404,{error:'Lobby not found.'}); if (req.method === 'GET') return respond(res,200,clean(game)); const b=await body(req); if (u.pathname.endsWith('/action')) { action(game,b.token,b.action); return respond(res,200,clean(game)); } const token=join(game,b.name?.trim().slice(0,24)); return respond(res,200,{...clean(game),token}); } const file = u.pathname === '/' ? 'index.html' : u.pathname.split('?')[0].slice(1); const target=path.resolve(PUBLIC,file); if (!target.startsWith(PUBLIC) || !fs.existsSync(target)) return respond(res,404,'Not found','text/plain'); return respond(res,200,fs.readFileSync(target), target.endsWith('.js')?'text/javascript':'text/html'); } catch (err) { return respond(res,400,{error:err.message}); } });
 if (require.main === module) server.listen(PORT);
-module.exports={create,join,action,phase,squad,server,createSolo,chooseBotAction,reassignCandidate,botPlan,win,awardDuskControl,claimPlace};
+module.exports={create,join,action,phase,squad,server,createSolo,chooseBotAction,reassignCandidate,fortifyCandidate,botPlan,win,awardDuskControl,claimPlace};

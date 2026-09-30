@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { create, join, action, phase, squad, createSolo, chooseBotAction, reassignCandidate, botPlan, awardDuskControl, claimPlace } = require('./server');
+const { create, join, action, phase, squad, createSolo, chooseBotAction, reassignCandidate, fortifyCandidate, botPlan, awardDuskControl, claimPlace } = require('./server');
 
 test('eight rounds visibly cross all match phases', () => { 
   assert.match(phase(1), /Dawn/); 
@@ -306,6 +306,71 @@ test('color-specific requirements and errors', () => {
   } catch (e) {
     assert.equal(e.message, 'Nectar gathering needs 2 Blue Pikmin; you have 1.');
   }
+});
+
+test('Sprout chooses every threatened place in relic, bridge, meadow, lookout order', () => {
+  const threats = [
+    ['relic', { red: 3, blue: 3, yellow: 2 }, 'fortify-relic', 'fortifying the Sun Relic against one takeover'],
+    ['bridge', { red: 4, blue: 2, yellow: 2 }, 'fortify-bridge', 'fortifying Mossy Bridge against one takeover'],
+    ['meadow', { red: 2, blue: 4, yellow: 2 }, 'fortify-meadow', 'fortifying Nectar Meadow against one takeover'],
+    ['lookout', { red: 2, blue: 2, yellow: 4 }, 'fortify-lookout', 'fortifying Lookout Ridge against one takeover']
+  ];
+  for (const [place, rivalUnits, actionName, plan] of threats) {
+    const res = createSolo('Threat Tester');
+    const game = res;
+    const sprout = game.players[1];
+    const human = game.players[0];
+    game.round = 6;
+    game.map[place] = 'Sprout';
+    sprout.nectar = 1;
+    human.units = rivalUnits;
+    assert.equal(fortifyCandidate(game, sprout, human), actionName);
+    assert.equal(botPlan(actionName), plan);
+  }
+});
+
+test('Sprout fortification respects gates, ownership, existing shields, priority, and Carry precedence', () => {
+  const res = createSolo('Gate Tester');
+  const game = res;
+  const sprout = game.players[1];
+  const human = game.players[0];
+  game.map.meadow = 'Sprout';
+  human.units.blue = 4;
+  assert.equal(fortifyCandidate(game, sprout, human), null);
+  game.round = 6;
+  sprout.nectar = 0;
+  assert.equal(fortifyCandidate(game, sprout, human), null);
+  sprout.nectar = 1;
+  game.fortified.meadow = 'Sprout';
+  assert.equal(fortifyCandidate(game, sprout, human), null);
+  game.fortified.meadow = null;
+  game.map.meadow = 'Gate Tester';
+  assert.equal(fortifyCandidate(game, sprout, human), null);
+
+  game.map.meadow = 'Sprout';
+  game.map.bridge = 'Sprout';
+  human.units.red = 4;
+  assert.equal(fortifyCandidate(game, sprout, human), 'fortify-bridge');
+  sprout.nectar = 3;
+  sprout.insight = 1;
+  assert.equal(chooseBotAction(game, sprout), 'carry');
+});
+
+test('Sprout executes a threatened fortification through the normal action path', () => {
+  const res = createSolo('Prepared Human');
+  const game = res;
+  const sprout = game.players[1];
+  const human = game.players[0];
+  game.round = 6;
+  game.map.meadow = 'Sprout';
+  sprout.nectar = 1;
+  human.units.blue = 4;
+  action(game, res.token, 'reassign-red-blue');
+  assert.equal(game.fortified.meadow, 'Sprout');
+  assert.equal(sprout.nectar, 0);
+  assert.equal(game.log.at(-1), 'Sprout fortified Nectar Meadow with 1 nectar.');
+  assert.equal(game.turn, 0);
+  assert.equal(game.round, 7);
 });
 
 test('all four garden places can be fortified for one nectar and one turn', () => {
