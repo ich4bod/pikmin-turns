@@ -52,7 +52,7 @@ const url = process.argv[2] || 'https://pikmin-turns.ichabod-crane.net/';
       }
       const [heading,desc,action] = cards[color];
       const button = page.locator('#'+action);
-      await page.getByRole('button',{name:'Gather'}).click();
+      await page.locator('button[onclick="act(\'gather\')"]').click();
       await page.waitForResponse(r => r.url().includes('/action') && r.status() === 200);
       if (await button.isDisabled()) throw Error(color+' unexpectedly disabled after gathering');
       const before = await page.evaluate(() => ({...window.game.players.find(p=>p.name===window.commander).units}));
