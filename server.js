@@ -64,7 +64,8 @@ function need(p, n, task, color) {
   }
 }
 function resolveAction(game, p, rival, kind) {
-  if (!['gather','scout','skirmish','carry','grow-red','grow-blue','grow-yellow'].includes(kind)) throw Error('Unknown order.');
+  const reassign = typeof kind === 'string' ? kind.match(/^reassign-(red|blue|yellow)-(red|blue|yellow)$/) : null;
+  if (!['gather','scout','skirmish','carry','grow-red','grow-blue','grow-yellow'].includes(kind) && !reassign) throw Error('Unknown order.');
   if (kind === 'gather') { 
     need(p, 2, 'Nectar gathering', 'blue'); 
     const force = Math.min(5, p.units.blue);
@@ -106,6 +107,14 @@ function resolveAction(game, p, rival, kind) {
     p.units[color] += 2;
     game.map.meadow = p.name;
     game.log.push(`${p.name} returned nectar to the Onion and grew 2 ${colorName(color)} Pikmin (squad ${squad(p)}).`);
+  }
+  if (reassign) {
+    const [, source, destination] = reassign;
+    if (source === destination) throw Error('Unknown order.');
+    if (p.units[source] < 2) throw Error(`Need 2 ${colorName(source)} Pikmin to reassign.`);
+    p.units[source] -= 2;
+    p.units[destination] += 2;
+    game.log.push(`${p.name} reassigned 2 ${colorName(source)} Pikmin as ${colorName(destination)}.`);
   }
 }
 function chooseBotAction(game, p) {

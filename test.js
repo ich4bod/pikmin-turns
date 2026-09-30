@@ -150,6 +150,32 @@ test('Sprout eight-order sequence', () => {
   assert.equal(squad(p), 6);
 });
 
+test('all six reassignments move exactly two Pikmin and advance the turn', () => {
+  for (const [source, destination] of [['red', 'blue'], ['red', 'yellow'], ['blue', 'red'], ['blue', 'yellow'], ['yellow', 'red'], ['yellow', 'blue']]) {
+    const res = create('Reassigner'); const game = res; const rival = join(game, 'Rival');
+    const before = { ...game.players[0].units };
+    action(game, res.token, `reassign-${source}-${destination}`);
+    assert.equal(game.players[0].units[source], before[source] - 2);
+    assert.equal(game.players[0].units[destination], before[destination] + 2);
+    assert.equal(game.players[0].nectar, 1);
+    assert.equal(game.players[0].insight, 0);
+    assert.equal(game.players[0].score, 0);
+    assert.equal(game.map.meadow, null);
+    assert.equal(game.turn, 1);
+    assert.equal(game.round, 1);
+    assert.equal(game.log.at(-1), `Reassigner reassigned 2 ${source[0].toUpperCase() + source.slice(1)} Pikmin as ${destination[0].toUpperCase() + destination.slice(1)}.`);
+    assert.equal(rival, game.players[1].token);
+  }
+});
+
+test('reassign rejects an undersized source atomically', () => {
+  const res = create('Reassigner'); const game = res; join(game, 'Rival');
+  game.players[0].units.red = 1;
+  const before = JSON.stringify({ players: game.players, map: game.map, log: game.log, turn: game.turn, round: game.round });
+  assert.throws(() => action(game, res.token, 'reassign-red-blue'), { message: 'Need 2 Red Pikmin to reassign.' });
+  assert.equal(JSON.stringify({ players: game.players, map: game.map, log: game.log, turn: game.turn, round: game.round }), before);
+});
+
 test('chosen growth changes only the requested color and logs the total', () => {
   for (const color of ['red', 'blue', 'yellow']) {
     const res = createSolo('Grower');
